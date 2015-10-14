@@ -14,17 +14,14 @@ Quick Start
 from fadeaway.core import main
 from fadeaway.core import ext
 
-rpc_frontend = ext.RPCFrontend(port=9151)
-
+rpc = ext.RPCFrontend(port=9151)
 
 class Hello(object):
 
-    @rpc_frontend.export
+    @rpc.export
     def hello(self, name, age):
-        return {
-            'desc': 'Hi!My name is %s, I am %s years old!' % (name, age)
-        }
-
+        return "Hi!My name is %s, I am %s years old" % (name, str(age))
+        
 if __name__ == '__main__':
     print 'start...'
     app = main.Application()
