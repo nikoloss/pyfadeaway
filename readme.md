@@ -77,5 +77,5 @@ General Public License V3 plus, respect.
 
 ## Feedback
 * mailto(rowland.lan@163.com) or (rowland.lancer@gmail.com)
-* QQ(623135465
+* QQ(623135465)
 * 知乎(http://www.zhihu.com/people/luo-ran-22)
