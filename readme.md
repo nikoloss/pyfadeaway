@@ -1,36 +1,76 @@
-======================================================================
 The PyFadeaway module
-======================================================================
-
-Introduction
----------------------
+===
+##Introduction
 Pyfadeaway is a multi-task RPC/json-rpc2.0 module also easy to use.
 You can build distributed application based on a good performance RPC 
 framwork with minimal effort.
+##Quick Start
+#### server
+`python
+# Server
+# This is a server demo, it shows a simply way to export a function to the
+# outside world by using a decorator, "export".
+import time
+from core import server
 
+rpc = server.RPCFrontend()
 
-Quick Start
----------------------
-from fadeaway.core import main
-from fadeaway.core import ext
-
-rpc = ext.RPCFrontend(port=9151)
-
-class Hello(object):
+class Demo(object):
 
     @rpc.export
-    def hello(self, name, age):
-        return "Hi!My name is %s, I am %s years old" % (name, str(age))
-        
+    def hello(self, name):
+        time.sleep(5)   # That will show how multi-threads work
+        return "Hello, %s" % name
+
+    @rpc.export
+    def hi(self, name):
+        return 'Hi, %s' % name
+
+app = server.Application()
+rpc.bind(9151)
+app.register(rpc)
+app.serv_forever()
+`
+####sync-client
+`Python
+# Sync-Client
+# The Client will work in a synchronous way
+
+from core.client import ServerProxy
+from core.client import Sync
+
+
 if __name__ == '__main__':
-    print 'start...'
-    app = main.Application()
-    app.register_frontend(rpc_frontend)
-    app.serv_forever()
+    ss = ServerProxy(mode=Sync,ip='localhost', port=9151).deploy()
+    h = ss.Demo()
+    print h.hello('billy') # shall blocking
+    print h.hello('rowland')
+    print h.hi('lucy')
+`
+####async-client
+`Python
+# Async-Client
+# The Client will work in a asynchronous way which would not cause any 
+# blocking calls which means you have to set callback function to every 
+# remote function call
+from core.client import ServerProxy
+from core.client import Async
 
+def callback(res, error=None):
+    '''
+    When there is a error while calling, the "error" parameter will be set
+    
+    '''
+    print '[callback]', res
 
+if __name__ == '__main__':
+    ss = ServerProxy(Async).deploy()
+    h = ss.Demo()
+    h.hello('billy').on(callback) # Yeah, that is how to set a callback
+    h.hello('rowland').on(callback)
+    h.hi('lucy').on(callback)
 
-License
----------------------
-Due to benefit from zeromq the PyFadeaway is licensed under the GNU Lesser
-General Public License V3 plus , respect.
+`
+## License
+Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser
+General Public License V3 plus, respect.
