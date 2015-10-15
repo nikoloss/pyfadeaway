@@ -66,6 +66,8 @@ framwork with minimal effort.
 	    ss = ServerProxy(Async).deploy()
 	    h = ss.Demo()
 	    h.hello('billy').on(callback) # Yeah, that is how to set a callback
+	    # This function and above would return at the same time wich proves
+	    # the Server works a multi-thread way
 	    h.hello('rowland').on(callback)
 	    h.hi('lucy').on(callback)
 
