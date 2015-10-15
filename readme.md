@@ -6,7 +6,7 @@ You can build distributed application based on a good performance RPC
 framwork with minimal effort.
 ##Quick Start
 #### server
-`python
+`
 # Server
 # This is a server demo, it shows a simply way to export a function to the
 # outside world by using a decorator, "export".
@@ -32,7 +32,7 @@ app.register(rpc)
 app.serv_forever()
 `
 ####sync-client
-`Python
+`
 # Sync-Client
 # The Client will work in a synchronous way
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     print h.hi('lucy')
 `
 ####async-client
-`Python
+`
 # Async-Client
 # The Client will work in a asynchronous way which would not cause any 
 # blocking calls which means you have to set callback function to every 
