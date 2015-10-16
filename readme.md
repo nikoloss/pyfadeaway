@@ -11,7 +11,7 @@ framwork with minimal effort.
 	# This is a server demo, it shows a simply way to export a function to the
 	# outside world by using a decorator, "export".
 	import time
-	from core import server
+	from fadeaway.core import server
 
 	rpc = server.RPCFrontend()
 
@@ -35,8 +35,8 @@ framwork with minimal effort.
 	# Sync-Client
 	# The Client will work in a synchronous way
 
-	from core.client import ServerProxy
-	from core.client import Sync
+	from fadeaway.core.client import ServerProxy
+	from fadeaway.core.client import Sync
 
 
 	if __name__ == '__main__':
@@ -52,8 +52,8 @@ framwork with minimal effort.
 	# The Client will work in a asynchronous way which would not cause any 
 	# blocking calls which means you have to set callback function to every 
 	# remote function call
-	from core.client import ServerProxy
-	from core.client import Async
+	from fadeaway.core.client import ServerProxy
+	from fadeaway.core.client import Async
 
 	def callback(res, error=None):
 	    '''
