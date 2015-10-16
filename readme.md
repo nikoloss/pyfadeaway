@@ -1,4 +1,4 @@
-The PyFadeaway module
+﻿The PyFadeaway module
 ===
 ##Introduction
 Pyfadeaway is a multi-task RPC/json-rpc2.0 module also easy to use.
