@@ -8,8 +8,6 @@ framwork with minimal effort.
 	$>sudo python setup.py install
 ##Quick Start
 #### server
-
-# Server
 ```python
 # This is a server demo, it shows a simply way to export a function to the
 # outside world by using a decorator, "export".
