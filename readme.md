@@ -7,77 +7,74 @@ framwork with minimal effort.
 ##Installation
 	$>sudo python setup.py install
 ##Quick Start
-```python
-import time
-def test():
-    print time.time()
-```
 #### server
 
-	# Server
-	# This is a server demo, it shows a simply way to export a function to the
-	# outside world by using a decorator, "export".
-	import time
-	from fadeaway.core import server
+# Server
+```python
+# This is a server demo, it shows a simply way to export a function to the
+# outside world by using a decorator, "export".
+import time
+from fadeaway.core import server
 
-	rpc = server.RPCFrontend()
+rpc = server.RPCFrontend()
 
-	class Demo(object):
+class Demo(object):
 
-	    @rpc.export
-	    def hello(self, name):
-		time.sleep(5)   # That will show how multi-threads work
-		return "Hello, %s" % name
+    @rpc.export
+    def hello(self, name):
+	time.sleep(5)   # That will show how multi-threads work
+	return "Hello, %s" % name
 
-	    @rpc.export
-	    def hi(self, name):
-		return 'Hi, %s' % name
+    @rpc.export
+    def hi(self, name):
+	return 'Hi, %s' % name
 
-	app = server.Application()
-	rpc.bind(9151)
-	app.register(rpc)
-	app.serv_forever()
+app = server.Application()
+rpc.bind(9151)
+app.register(rpc)
+app.serv_forever()
+```
 ####sync-client
+```python
+# Sync-Client
+# The Client will work in a synchronous way
 
-	# Sync-Client
-	# The Client will work in a synchronous way
-
-	from fadeaway.core.client import ServerProxy
-	from fadeaway.core.client import Sync
+from fadeaway.core.client import ServerProxy
+from fadeaway.core.client import Sync
 
 
-	if __name__ == '__main__':
-	    ss = ServerProxy(mode=Sync,ip='localhost', port=9151).deploy()
-	    h = ss.Demo()
-	    print h.hello('billy') # shall blocking
-	    print h.hello('rowland')
-	    print h.hi('lucy')
-
+if __name__ == '__main__':
+    ss = ServerProxy(mode=Sync,ip='localhost', port=9151).deploy()
+    h = ss.Demo()
+    print h.hello('billy') # shall blocking
+    print h.hello('rowland')
+    print h.hi('lucy')
+```
 ####async-client
+```python
+# Async-Client
+# The Client will work in a asynchronous way which would not cause any 
+# blocking calls which means you have to set callback function to every 
+# remote function call
+from fadeaway.core.client import ServerProxy
+from fadeaway.core.client import Async
 
-	# Async-Client
-	# The Client will work in a asynchronous way which would not cause any 
-	# blocking calls which means you have to set callback function to every 
-	# remote function call
-	from fadeaway.core.client import ServerProxy
-	from fadeaway.core.client import Async
+def callback(res, error=None):
+    '''
+    When there is a error while calling, the "error" parameter will be set
+    
+    '''
+    print '[callback]', res
 
-	def callback(res, error=None):
-	    '''
-	    When there is a error while calling, the "error" parameter will be set
-	    
-	    '''
-	    print '[callback]', res
-
-	if __name__ == '__main__':
-	    ss = ServerProxy(Async).deploy()
-	    h = ss.Demo()
-	    h.hello('billy').on(callback) # Yeah, that is how to set a callback
-	    # This function and above would return at the same time wich proves
-	    # the Server works a multi-thread way
-	    h.hello('rowland').on(callback)
-	    h.hi('lucy').on(callback)
-
+if __name__ == '__main__':
+    ss = ServerProxy(Async).deploy()
+    h = ss.Demo()
+    h.hello('billy').on(callback) # Yeah, that is how to set a callback
+    # This function and above would return at the same time wich proves
+    # the Server works a multi-thread way
+    h.hello('rowland').on(callback)
+    h.hi('lucy').on(callback)
+```
 ## License
 Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser
 General Public License V3 plus, respect.
