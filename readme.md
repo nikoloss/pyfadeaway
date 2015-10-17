@@ -7,8 +7,10 @@ framwork with minimal effort.
 ##Installation
 	$>sudo python setup.py install
 ##Quick Start
-```Bash
-echo "hello world" #test
+```python
+import time
+def test():
+    print time.time()
 ```
 #### server
 
