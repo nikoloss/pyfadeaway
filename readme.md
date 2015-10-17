@@ -7,6 +7,9 @@ framwork with minimal effort.
 ##Installation
 	$>sudo python setup.py install
 ##Quick Start
+```Bash
+sudo python setup.py install  
+```
 #### server
 
 	# Server
