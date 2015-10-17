@@ -3,7 +3,7 @@
 ##Introduction
 Pyfadeaway is a multi-task RPC/json-rpc2.0 module also easy to use.
 You can build distributed application based on a good performance RPC 
-framwork with minimal effort.
+framwork with minimal effort.</br>
 Pyfadeaway是一个基于多线程的RPC/json-rpc2.0 的模块，它非常小巧，易读，易用。
 你可以轻而易举的使用它来构建高性能的rpc应用
 ##Installation
