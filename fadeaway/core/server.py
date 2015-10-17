@@ -96,6 +96,7 @@ class RPCFrontend(Handler):
     def dispatch(self, address, data):
         try:
             data_dict = json.loads(data)
+            mid = data_dict['id']
             operation = data_dict.pop('method')
             func = self.get_op_func(operation)
             func.dispatch_context = {
@@ -106,22 +107,22 @@ class RPCFrontend(Handler):
         except Exception, e:
             Log.get_logger().exception(e)
             e.code = -32700
-            self.finish_with_error(address, e)
+            self.finish_with_error(address, e, id=mid)
 
 
 def _task_wrap(func, handler, data_dict):
     address = func.dispatch_context['address']
     params = data_dict.get('params')
-    rid = data_dict.get('id')
+    mid = data_dict['id']
     try:
         tik = time.time()
         res = func(*params)
         tok = time.time()
         costs = '%.5f' % (tok-tik)
-        IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=rid)
+        IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=mid)
         Log.get_logger().debug('[response] to %r with [%s] takes [%s] seconds', address, res, costs)
     except Exception as e:
-        IOLoop.instance().add_callback(handler.finish_with_error, address, e, id=rid)
+        IOLoop.instance().add_callback(handler.finish_with_error, address, e, id=mid)
         Log.get_logger().exception(e)
 
 

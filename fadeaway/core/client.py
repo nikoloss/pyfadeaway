@@ -90,12 +90,12 @@ class AsyncRPCClient(Handler):
         data = json.loads(s_data)
         mid = data.get('id')
         callback = self._callbacks.pop(mid)
+        e = None
         if data.get('error'):
             error = data['error']
             e = Exception(error.get('message'))
             e.code = error['code'] if error.get('code') else APPLICATION_ERROR
-            callback(error=e)
-        callback(data.get('result'))
+        callback(data.get('result'), error=e)
 
     def on_write(self):
         try:
