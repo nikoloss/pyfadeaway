@@ -46,7 +46,7 @@ from fadeaway.core.client import Sync
 if __name__ == '__main__':
     ss = ServerProxy(mode=Sync,ip='localhost', port=9151).deploy()
     h = ss.Demo()
-    print h.hello('billy') # shall blocking
+    print h.hello('billy') # shall block
     print h.hello('rowland')
     print h.hi('lucy')
 ```
