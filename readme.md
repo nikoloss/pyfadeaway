@@ -22,12 +22,12 @@ class Demo(object):
 
     @rpc.export
     def hello(self, name):
-	time.sleep(5)   # That will show how multi-threads work
-	return "Hello, %s" % name
+        time.sleep(5)   # That will show how multi-threads work
+        return "Hello, %s" % name
 
     @rpc.export
     def hi(self, name):
-	return 'Hi, %s' % name
+        return 'Hi, %s' % name
 
 app = server.Application()
 rpc.bind(9151)
