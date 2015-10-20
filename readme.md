@@ -69,11 +69,11 @@ def callback(res, error=None):
 if __name__ == '__main__':
     ss = ServerProxy(Async).deploy()
     h = ss.Demo()
-    h.hello('billy').on(callback) # Yeah, that is how to set a callback
+    h.hello('billy').then(callback) # Yeah, that is how to set a callback
     # This function and above would return at the same time wich proves
     # the Server works a multi-thread way
-    h.hello('rowland').on(callback)
-    h.hi('lucy').on(callback)
+    h.hello('rowland').then(callback)
+    h.hi('lucy').then(callback)
 ```
 ## License
 Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser

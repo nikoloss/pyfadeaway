@@ -12,6 +12,6 @@ def callback(res, error=None):
 if __name__ == '__main__':
     ss = ServerProxy(Async).deploy()
     h = ss.Demo()
-    h.hello('billy').on(callback)
-    h.hello('rowland').on(callback)
-    h.hi('lucy').on(callback)
+    h.hello('billy').then(callback)
+    h.hello('rowland').then(callback)
+    h.hi('lucy').then(callback)

@@ -162,7 +162,7 @@ class AsyncMethodIllusion(object):
         self.ex_params = kwargs
         return self
 
-    def on(self, func):
+    def then(self, func):
         mid = str(uuid.uuid4())
         self._rpclient.add_callback(mid, func)
         self._rpclient.send(self._klass, self._method, mid, *self.params, **self.ex_params)
