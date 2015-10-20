@@ -21,7 +21,7 @@ setup(
     install_requires = ['zmq'],
     author_email='rowland.lan@163.com',
     url='http://www.zhihu.com/people/luo-ran-22',
-    license="GNU",
+    license="LGPLV3",
     packages=['fadeaway', 'fadeaway.core', 'fadeaway.plugins'],
     package_data={
         'fadeaway': [
