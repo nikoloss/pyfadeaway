@@ -74,6 +74,7 @@ if __name__ == '__main__':
     # the Server works a multi-thread way
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
+
 ```
 ## License
 Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser

@@ -163,6 +163,7 @@ class AsyncMethodIllusion(object):
         return self
 
     def then(self, func):
+        '''callback'''
         mid = str(uuid.uuid4())
         self._rpclient.add_callback(mid, func)
         self._rpclient.send(self._klass, self._method, mid, *self.params, **self.ex_params)
