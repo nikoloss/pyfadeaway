@@ -69,9 +69,7 @@ def callback(res, error=None):
 if __name__ == '__main__':
     ss = ServerProxy(Async).deploy()
     h = ss.Demo()
-    h.hello('billy').then(callback) # Yeah, that is how to set a callback
-    # This function and above would return at the same time wich proves
-    # the Server works a multi-thread way
+    h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
 
