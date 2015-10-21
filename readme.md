@@ -53,7 +53,7 @@ if __name__ == '__main__':
 ####async-client
 ```python
 # Async-Client
-# The Client will work in a asynchronous way which would not cause any 
+# The Client will work in an asynchronous way which would not cause any 
 # blocking calls which means you have to set callback function to every 
 # remote function call
 from fadeaway.core.client import ServerProxy
