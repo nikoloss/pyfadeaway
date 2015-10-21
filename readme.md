@@ -60,10 +60,7 @@ from fadeaway.core.client import ServerProxy
 from fadeaway.core.client import Async
 
 def callback(res, error=None):
-    '''
-    When there is a error while calling, the "error" parameter will be set
-    
-    '''
+    # Any raised exception will set to the parameter "error"
     print '[callback]', res
 
 if __name__ == '__main__':
