@@ -117,7 +117,7 @@ def _task_wrap(func, handler, data_dict):
     mid = data_dict['id']
     try:
         tik = time.time()
-        res = func(*params, **ex_params) if ex_params else func(*params)
+        res = func(*params, **ex_params)
         tok = time.time()
         costs = '%.5f' % (tok-tik)
         IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=mid)
