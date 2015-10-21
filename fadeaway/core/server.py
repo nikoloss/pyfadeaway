@@ -113,10 +113,11 @@ class RPCFrontend(Handler):
 def _task_wrap(func, handler, data_dict):
     address = func.dispatch_context['address']
     params = data_dict.get('params')
+    ex_params = dict([(str(k), v) for k, v in data_dict.get('ex_params').iteritems()])
     mid = data_dict['id']
     try:
         tik = time.time()
-        res = func(*params)
+        res = func(*params, **ex_params) if ex_params else func(*params)
         tok = time.time()
         costs = '%.5f' % (tok-tik)
         IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=mid)
