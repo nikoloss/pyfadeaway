@@ -1,6 +1,5 @@
 #coding: utf8
 import time
-import inspect
 import functools
 
 import zmq
@@ -54,11 +53,10 @@ class RPCFrontend(Handler):
         address, data = self.fd().recv_multipart()
         self.dispatch(address, data)
 
-    def export(self, func):
-        module_name = func.__module__
-        class_name = inspect.stack()[1][3]
-        self._mapper[class_name + '->' + func.__name__] = (module_name, class_name, func.__name__)
-        return func
+    def export(self, klass):
+        class_name = klass.__name__
+        self._mapper[class_name] = klass
+        return klass
 
     def finish(self, address, data, **kwargs):
         try:
@@ -84,19 +82,18 @@ class RPCFrontend(Handler):
         self.fd().send_multipart([address, json.dumps(ret)])
 
     def get_op_func(self, op):
-        if op not in self._mapper:
+        op = str(op)
+        class_name, method_name = op.split('->')
+        if class_name not in self._mapper:
             raise NoSuchOperation('not support operation[%s]' % op)
-        module_name, class_name, func_name = self._mapper.get(op)
-        module = __import__(module_name)
-        clazz = getattr(module, class_name)
+        clazz = self._mapper.get(class_name)
         instance = clazz()
-        func = getattr(clazz, func_name)
+        func = getattr(clazz, method_name)
         return functools.partial(func, instance)
 
     def dispatch(self, address, data):
         try:
             data_dict = json.loads(data)
-            mid = data_dict['id']
             operation = data_dict.pop('method')
             func = self.get_op_func(operation)
             func.dispatch_context = {
@@ -107,23 +104,22 @@ class RPCFrontend(Handler):
         except Exception, e:
             Log.get_logger().exception(e)
             e.code = -32700
-            self.finish_with_error(address, e, id=mid)
+            self.finish_with_error(address, e)
 
 
 def _task_wrap(func, handler, data_dict):
     address = func.dispatch_context['address']
     params = data_dict.get('params')
-    ex_params = dict([(str(k), v) for k, v in data_dict.get('ex_params').iteritems()])
-    mid = data_dict['id']
+    rid = data_dict.get('id')
     try:
         tik = time.time()
-        res = func(*params, **ex_params)
+        res = func(*params)
         tok = time.time()
         costs = '%.5f' % (tok-tik)
-        IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=mid)
+        IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=rid)
         Log.get_logger().debug('[response] to %r with [%s] takes [%s] seconds', address, res, costs)
     except Exception as e:
-        IOLoop.instance().add_callback(handler.finish_with_error, address, e, id=mid)
+        IOLoop.instance().add_callback(handler.finish_with_error, address, e, id=rid)
         Log.get_logger().exception(e)
 
 
