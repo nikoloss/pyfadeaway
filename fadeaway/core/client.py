@@ -56,6 +56,7 @@ class AsyncRPCClient(Handler):
         self.initialize()
         self._callbacks = {}
         self._buffer = deque()
+        self._ioloop =  IOLoop.instance()
 
     def initialize(self):
         if hasattr(self, '_client') and self._client:
@@ -83,7 +84,8 @@ class AsyncRPCClient(Handler):
         self._buffer.append(s_data)
         if not zmq.POLLOUT & self.flag:
             self.flag |= zmq.POLLOUT
-            IOLoop.instance().update_handler(self.fd(), self.flag)
+            #IOLoop.instance().update_handler(self.fd(), self.flag)
+            self._ioloop.add_callback(self._ioloop.update_handler, self.fd(), self.flag)
 
     def on_read(self):
         s_data = self.fd().recv()
