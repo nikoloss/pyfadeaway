@@ -58,9 +58,10 @@ class RPCFrontend(Handler):
         self._mapper[class_name] = klass
         return klass
 
-    def finish(self, address, data, **kwargs):
+    def finish(self, address, rid, data, **kwargs):
         try:
             ret = {
+                'id': rid,
                 'jsonrpc': '2.0',
                 'result': data
             }
@@ -69,8 +70,9 @@ class RPCFrontend(Handler):
         except Exception as e:
             self.fd().send_multipart([address, data])
 
-    def finish_with_error(self, address, e, **kwargs):
+    def finish_with_error(self, address, rid, e, **kwargs):
         ret = {
+            'id': rid,
             'jsonrpc': '2.0',
             'error': {
                 'code': -32600,
@@ -92,9 +94,11 @@ class RPCFrontend(Handler):
         return functools.partial(func, instance)
 
     def dispatch(self, address, data):
+        rid = None
         try:
             data_dict = json.loads(data)
             operation = data_dict.pop('method')
+            rid = data_dict.get('id')
             func = self.get_op_func(operation)
             func.dispatch_context = {
                 'address': address
@@ -104,7 +108,8 @@ class RPCFrontend(Handler):
         except Exception, e:
             Log.get_logger().exception(e)
             e.code = -32700
-            self.finish_with_error(address, e)
+            if rid:
+                self.finish_with_error(address, rid, e)
 
 
 def _task_wrap(func, handler, data_dict):
@@ -116,10 +121,10 @@ def _task_wrap(func, handler, data_dict):
         res = func(*params)
         tok = time.time()
         costs = '%.5f' % (tok-tik)
-        IOLoop.instance().add_callback(handler.finish, address, res, costs=costs, id=rid)
+        IOLoop.instance().add_callback(handler.finish, address, rid, res, costs=costs)
         Log.get_logger().debug('[response] to %r with [%s] takes [%s] seconds', address, res, costs)
     except Exception as e:
-        IOLoop.instance().add_callback(handler.finish_with_error, address, e, id=rid)
+        IOLoop.instance().add_callback(handler.finish_with_error, address, rid, e)
         Log.get_logger().exception(e)
 
 
