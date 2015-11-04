@@ -7,6 +7,8 @@ framwork with minimal effort.</br>
 Pyfadeaway是一个基于多线程的RPC/json-rpc2.0 的模块，它非常小巧，易读，易用。
 你可以轻而易举的使用它来构建高性能的rpc应用
 ##Installation
+        $>git clone https://github.com/nikoloss/pyfadeaway
+        $>cd pyfadeaway
 	$>sudo python setup.py install
 ##Quick Start
 #### server
