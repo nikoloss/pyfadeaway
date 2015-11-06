@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
 ## About Log
 Just add "fadeaway" logging handler, set it to DEBUG level. it would log all 
-the information that every request or response carry.
+the information that every request or response carries.
 
 ## License
 Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser
