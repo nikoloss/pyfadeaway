@@ -46,7 +46,7 @@ from fadeaway.core.client import Sync
 
 
 if __name__ == '__main__':
-    ss = ServerProxy(mode=Sync,ip='localhost', port=9151).deploy()
+    ss = ServerProxy(mode=Sync,host='localhost', port=9151).deploy()
     h = ss.Demo()
     print h.hello('billy') # shall block
     print h.hello('rowland')
@@ -66,7 +66,7 @@ def callback(res, error=None):
     print '[callback]', res
 
 if __name__ == '__main__':
-    ss = ServerProxy(Async).deploy()
+    ss = ServerProxy(Async, 'localhost', 9151).deploy()
     h = ss.Demo()
     h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)
