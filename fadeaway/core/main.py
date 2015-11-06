@@ -90,6 +90,10 @@ class IOLoop(object):
         return IOLoop._instance
 
     @staticmethod
+    def is_running():
+        return IOLoop.instance()._running
+
+    @staticmethod
     def initialized():
         """Returns true if the singleton instance has been created."""
         return hasattr(IOLoop, "_instance")
@@ -100,7 +104,7 @@ class IOLoop(object):
         self._callback_lock = threading.Lock()
         self._ctx = zmq.Context()
         self._poller = zmq.Poller()
-
+        self._running = False
         self._waker = Waker()
         self.add_handler(self._waker.fd(), lambda e: self._waker.consume(), self._waker.flag)
 
@@ -133,8 +137,14 @@ class IOLoop(object):
             Log.get_logger().exception(e)
 
     def start(self):
+
+        with IOLoop._instance_lock:
+            assert not self._running
+            self._running = True
+
         self._thread_ident = thread.get_ident()
-        while True:
+
+        while 1:
             with self._callback_lock:
                 callbacks = self._callbacks
                 self._callbacks = []

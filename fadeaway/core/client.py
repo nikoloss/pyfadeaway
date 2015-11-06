@@ -5,6 +5,7 @@ import threading, uuid
 from collections import deque
 from main import Handler
 from main import IOLoop
+
 try:
     import ujson as json
 except ImportError:
@@ -49,14 +50,13 @@ class SyncRPCClient(Handler):
 
 
 class AsyncRPCClient(Handler):
-
     def __init__(self):
         super(AsyncRPCClient, self).__init__()
         self.flag = zmq.POLLIN
         self.initialize()
         self._callbacks = {}
         self._buffer = deque()
-        self._ioloop =  IOLoop.instance()
+        self._ioloop = IOLoop.instance()
 
     def initialize(self):
         if hasattr(self, '_client') and self._client:
@@ -84,7 +84,7 @@ class AsyncRPCClient(Handler):
         self._buffer.append(s_data)
         if not zmq.POLLOUT & self.flag:
             self.flag |= zmq.POLLOUT
-            #IOLoop.instance().update_handler(self.fd(), self.flag)
+            # IOLoop.instance().update_handler(self.fd(), self.flag)
             self._ioloop.add_callback(self._ioloop.update_handler, self.fd(), self.flag)
 
     def on_read(self):
@@ -109,8 +109,7 @@ class AsyncRPCClient(Handler):
 
 
 class SyncMethodIllusion(object):
-
-    _lock = threading.Lock()   # Due to zeromq, read/write operations must be thread safe
+    _lock = threading.Lock()  # Due to zeromq, read/write operations must be thread safe
 
     def __init__(self, rpclient, klass, method):
         self._rpclient = rpclient
@@ -128,7 +127,6 @@ class SyncMethodIllusion(object):
 
 
 class SyncClientIllusion(object):
-
     def __init__(self, rpclient, klass):
         self._klass = klass
         self._rpclient = rpclient
@@ -141,7 +139,6 @@ class SyncClientIllusion(object):
 
 
 class SyncServerProxy(object):
-
     def __init__(self, ip, port):
         self._rpclient = SyncRPCClient()
         self._rpclient.connect('tcp://{ip}:{port}'.format(ip=ip, port=port))
@@ -151,8 +148,7 @@ class SyncServerProxy(object):
 
 
 class AsyncMethodIllusion(object):
-
-    _lock = threading.Lock() # Due to zeromq read/write operations must be thread safe
+    _lock = threading.Lock()  # Due to zeromq read/write operations must be thread safe
 
     def __init__(self, rpclient, klass, method):
         self._method = method
@@ -172,7 +168,6 @@ class AsyncMethodIllusion(object):
 
 
 class AsyncClientIllusion(object):
-
     def __init__(self, rpclient, klass):
         self._rpclient = rpclient
         self._klass = klass
@@ -185,13 +180,17 @@ class AsyncClientIllusion(object):
 
 
 class AsyncServerProxy(object):
-
     def __init__(self, ip, port):
         self._rpclient = AsyncRPCClient()
         self._rpclient.connect('tcp://{ip}:{port}'.format(ip=ip, port=port))
         self._ioloop = IOLoop.instance()
-        self._ioloop.add_handler(self._rpclient.fd(), self._rpclient.handle, self._rpclient.flag)
-        threading.Thread(target=lambda: IOLoop.instance().start()).start()
+
+        if self._ioloop.is_running():
+            self._ioloop.add_callback(self._ioloop.add_handler, self._rpclient.fd(), self._rpclient.handle,
+                                      self._rpclient.flag)
+        else:
+            self._ioloop.add_handler(self._rpclient.fd(), self._rpclient.handle, self._rpclient.flag)
+            threading.Thread(target=lambda: IOLoop.instance().start()).start()
 
     def __getattr__(self, klass):
         return AsyncClientIllusion(self._rpclient, klass)
