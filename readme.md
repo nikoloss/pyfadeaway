@@ -66,7 +66,7 @@ def callback(res, error=None):
     print '[callback]', res
 
 if __name__ == '__main__':
-    ss = ServerProxy(Async, 'localhost', 9151).deploy()
+    ss = ServerProxy(mod=Async, host='localhost', port=9151).deploy()
     h = ss.Demo()
     h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)
