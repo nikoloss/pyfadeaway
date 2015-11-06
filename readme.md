@@ -72,6 +72,11 @@ if __name__ == '__main__':
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
 ```
+
+## About Log
+Just add "fadeaway" logging handler, set it to DEBUG level. it would log all 
+the information that every request or response carry.
+
 ## License
 Due to benefit from zeromq, the PyFadeaway is licensed under the GNU Lesser
 General Public License V3 plus, respect.

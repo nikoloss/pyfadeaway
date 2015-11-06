@@ -5,7 +5,9 @@ from fadeaway.core.client import Sync
 
 if __name__ == '__main__':
     ss = ServerProxy(mode=Sync, host='localhost', port=9151).deploy()
-    h = ss.Demo()
-    print h.hello('billy')
-    print h.hello('rowland')
-    print h.hi('lucy')
+    d = ss.Demo()
+    print d.test_string('lucy')
+    print d.test_number(1)
+    print d.test_array([1, '2', 3.14, 4])
+    print d.test_dict({"name": "Billy"})
+    print d.test_mix(-1, 'greetings', ['a', 'b', 'c'], {"abc": 123})
