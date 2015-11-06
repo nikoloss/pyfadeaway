@@ -139,9 +139,9 @@ class SyncClientIllusion(object):
 
 
 class SyncServerProxy(object):
-    def __init__(self, ip, port):
+    def __init__(self, host, port):
         self._rpclient = SyncRPCClient()
-        self._rpclient.connect('tcp://{ip}:{port}'.format(ip=ip, port=port))
+        self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
 
     def __getattr__(self, name):
         return SyncClientIllusion(self._rpclient, name)
@@ -180,9 +180,9 @@ class AsyncClientIllusion(object):
 
 
 class AsyncServerProxy(object):
-    def __init__(self, ip, port):
+    def __init__(self, host, port):
         self._rpclient = AsyncRPCClient()
-        self._rpclient.connect('tcp://{ip}:{port}'.format(ip=ip, port=port))
+        self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
         self._ioloop = IOLoop.instance()
 
         if self._ioloop.is_running():
@@ -197,15 +197,15 @@ class AsyncServerProxy(object):
 
 
 class ServerProxy(object):
-    def __init__(self, mode, ip='localhost', port=9151):
-        self.ip = ip
+    def __init__(self, mode, host='localhost', port=9151):
+        self.host = host
         self.port = port
         self.mode = mode
 
     def deploy(self):
         if self.mode == Async:
-            return AsyncServerProxy(self.ip, self.port)
+            return AsyncServerProxy(self.host, self.port)
         elif self.mode == Sync:
-            return SyncServerProxy(self.ip, self.port)
+            return SyncServerProxy(self.host, self.port)
 
 

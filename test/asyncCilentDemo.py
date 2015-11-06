@@ -10,7 +10,7 @@ def callback(res, error=None):
         print error
 
 if __name__ == '__main__':
-    ss = ServerProxy(Async).deploy()
+    ss = ServerProxy(Async, 'localhost', 9151).deploy()
     h = ss.Demo()
     h.hello('billy').then(callback)
     h.hello('rowland').then(callback)
