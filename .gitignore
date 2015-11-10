@@ -1,4 +1,5 @@
-#ignore .idea/*
+#ignore
+.idea/*
 *.log
 *.log.*
 .idea
