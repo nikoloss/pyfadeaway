@@ -106,6 +106,7 @@ class IOLoop(object):
         self._poller = zmq.Poller()
         self._running = False
         self._waker = Waker()
+        self._thread_ident = -1
         self.add_handler(self._waker.fd(), lambda e: self._waker.consume(), self._waker.flag)
 
     def get_zmq_context(self):

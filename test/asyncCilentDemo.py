@@ -18,6 +18,6 @@ def callback_for_mix(num_arg, str_arg, list_arg, dict_arg, error=None):
 if __name__ == '__main__':
     ss = ServerProxy(Async, 'localhost', 9151).deploy()
     d = ss.Demo()
-    d.hello('billy').then(callback)
-    d.hello('rowland').then(callback)
+    #d.hello('billy').then(callback)
+    d.test_number(222).then(callback)
     d.test_mix(-1, 'greetings', ['a', 'b', 'c'], {"abc": 123}).then(callback)
