@@ -18,7 +18,7 @@ setup(
     description='A Multi-tasking RPC Server apply google\'s json-rpc protocol 2.0',
     long_description=long_description,
     author=AUTHOR,
-    install_requires = ['pyzmq'],
+    install_requires = ['pyzmq', 'futures'],
     author_email='rowland.lan@163.com',
     url='http://www.zhihu.com/people/luo-ran-22',
     license="LGPLV3",
