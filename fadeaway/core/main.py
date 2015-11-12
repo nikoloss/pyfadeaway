@@ -152,7 +152,7 @@ class IOLoop(object):
                 self._callbacks = []
             for callback in callbacks:
                 callback()
-            sockets = dict(self._poller.poll(3600))
+            sockets = dict(self._poller.poll(360000))
             for fd, event in sockets.iteritems():
                 handler = self._handlers[fd]
                 try:

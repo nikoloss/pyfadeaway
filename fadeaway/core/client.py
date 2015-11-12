@@ -134,8 +134,10 @@ class SyncClientIllusion(object):
 
 
 class SyncServerProxy(object):
-    def __init__(self, host, port):
+    def __init__(self, host, port, configs):
         self._rpclient = SyncRPCClient()
+        for config, value in configs.iteritems():
+            self._rpclient.sock().setsockopt(config, value)
         self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
 
     def __getattr__(self, name):
@@ -178,8 +180,10 @@ class AsyncServerProxy(object):
 
     _lock = threading.Lock()
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, configs):
         self._rpclient = AsyncRPCClient()
+        for config, value in configs.iteritems():
+            self._rpclient.sock().setsockopt(config, value)
         self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
         self._ioloop = IOLoop.instance()
 
@@ -193,15 +197,16 @@ class AsyncServerProxy(object):
 
 
 class ServerProxy(object):
-    def __init__(self, mode, host, port):
+    def __init__(self, mode, host, port, configs={}):
         self.host = host
         self.port = port
         self.mode = mode
+        self.configs = configs
 
     def deploy(self):
         if self.mode == Async:
-            return AsyncServerProxy(self.host, self.port)
+            return AsyncServerProxy(self.host, self.port, self.configs)
         elif self.mode == Sync:
-            return SyncServerProxy(self.host, self.port)
+            return SyncServerProxy(self.host, self.port, self.configs)
 
 
