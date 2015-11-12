@@ -22,7 +22,7 @@ class SyncRPCClient(Handler):
         super(SyncRPCClient, self).__init__()
         self._client = self.ctx.socket(zmq.XREQ)
 
-    def fd(self):
+    def sock(self):
         return self._client
 
     def connect(self, protocol):
@@ -36,10 +36,10 @@ class SyncRPCClient(Handler):
             'ex_params': kwargs
         }
         s_data = json.dumps(data)
-        self.fd().send(s_data)
+        self.sock().send(s_data)
 
     def recv(self):
-        s_data = self.fd().recv()
+        s_data = self.sock().recv()
         data = json.loads(s_data)
         if data.get('error'):
             error = data['error']
@@ -53,16 +53,11 @@ class AsyncRPCClient(Handler):
     def __init__(self):
         super(AsyncRPCClient, self).__init__()
         self.flag = zmq.POLLIN
-        self.initialize()
         self._callbacks = {}
         self._buffer = deque()
         self._ioloop = IOLoop.instance()
-
-    def initialize(self):
-        if hasattr(self, '_client') and self._client:
-            self._client.close()
-            del self._client
         self._client = self.ctx.socket(zmq.XREQ)
+        self._ioloop.add_handler(self.sock(), self.handle, self.flag)
 
     def add_callback(self, mid, func):
         self._callbacks[mid] = func
@@ -70,7 +65,7 @@ class AsyncRPCClient(Handler):
     def connect(self, protocol):
         self._client.connect(protocol)
 
-    def fd(self):
+    def sock(self):
         return self._client
 
     def send(self, klass, method, mid, *args, **kwargs):
@@ -84,11 +79,11 @@ class AsyncRPCClient(Handler):
         self._buffer.append(s_data)
         if not zmq.POLLOUT & self.flag:
             self.flag |= zmq.POLLOUT
-            # IOLoop.instance().update_handler(self.fd(), self.flag)
-            self._ioloop.add_callback(self._ioloop.update_handler, self.fd(), self.flag)
+            # IOLoop.instance().update_handler(self.sock(), self.flag)
+            self._ioloop.add_callback(self._ioloop.update_handler, self.sock(), self.flag)
 
     def on_read(self):
-        s_data = self.fd().recv()
+        s_data = self.sock().recv()
         data = json.loads(s_data)
         mid = data.get('id')
         callback = self._callbacks.pop(mid)
@@ -102,10 +97,10 @@ class AsyncRPCClient(Handler):
     def on_write(self):
         try:
             buf = self._buffer.popleft()
-            self.fd().send(buf)
+            self.sock().send(buf)
         except IndexError as ex:
             self.flag -= zmq.POLLIN
-            IOLoop.instance().update_handler(self.fd(), self.flag)
+            IOLoop.instance().update_handler(self.sock(), self.flag)
 
 
 class SyncMethodIllusion(object):
@@ -180,24 +175,25 @@ class AsyncClientIllusion(object):
 
 
 class AsyncServerProxy(object):
+
+    _lock = threading.Lock()
+
     def __init__(self, host, port):
         self._rpclient = AsyncRPCClient()
         self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
         self._ioloop = IOLoop.instance()
 
-        if self._ioloop.is_running():
-            self._ioloop.add_callback(self._ioloop.add_handler, self._rpclient.fd(), self._rpclient.handle,
-                                      self._rpclient.flag)
-        else:
-            self._ioloop.add_handler(self._rpclient.fd(), self._rpclient.handle, self._rpclient.flag)
-            threading.Thread(target=lambda: IOLoop.instance().start()).start()
+        if not self._ioloop.is_running():
+            with AsyncServerProxy._lock:
+                if not self._ioloop.is_running():
+                    threading.Thread(target=lambda: IOLoop.instance().start()).start()
 
     def __getattr__(self, klass):
         return AsyncClientIllusion(self._rpclient, klass)
 
 
 class ServerProxy(object):
-    def __init__(self, mode, host='localhost', port=9151):
+    def __init__(self, mode, host, port):
         self.host = host
         self.port = port
         self.mode = mode

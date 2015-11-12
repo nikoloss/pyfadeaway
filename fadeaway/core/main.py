@@ -22,7 +22,7 @@ class Handler(object):
         self.ctx = get_global_context()
         self.stack_context = {}
 
-    def fd(self):
+    def sock(self):
         raise NotImplementedError()
 
     def on_read(self):
@@ -43,8 +43,8 @@ class Handler(object):
             self.on_error()
 
     def __del__(self):
-        if self.fd():
-            self.fd().close()
+        if self.sock():
+            self.sock().close()
 
 
 class Waker(Handler):
@@ -57,7 +57,7 @@ class Waker(Handler):
         self.reader.bind('inproc://waker')
         self.writer.connect('inproc://waker')
 
-    def fd(self):
+    def sock(self):
         return self.reader
 
     def wake_up(self):
@@ -107,7 +107,7 @@ class IOLoop(object):
         self._running = False
         self._waker = Waker()
         self._thread_ident = -1
-        self.add_handler(self._waker.fd(), lambda e: self._waker.consume(), self._waker.flag)
+        self.add_handler(self._waker.sock(), lambda e: self._waker.consume(), self._waker.flag)
 
     def get_zmq_context(self):
         return self._ctx

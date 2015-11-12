@@ -1,8 +1,8 @@
 # coding : utf8
 import time
-from fadeaway.core import server
+from fadeaway.core import server, main
 
-rpc = server.RPCFrontend()
+rpc = server.RPCFrontend(9151)
 
 @rpc.export
 class Demo(object):
@@ -48,9 +48,5 @@ class Demo(object):
         except:
             raise Exception('demand not satisfied')
 
-
-app = server.Application()
-rpc.bind(9151)
-app.register(rpc)
-app.serv_forever()
+main.IOLoop.instance().start()
 

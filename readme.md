@@ -18,9 +18,9 @@ $> sudo python setup.py install
 # This is a server demo, it shows a simply way to export a function to the
 # outside world by using a decorator, "export".
 import time
-from fadeaway.core import server
+from fadeaway.core import server, main
 
-rpc = server.RPCFrontend()
+rpc = server.RPCFrontend(9151)
 
 @rpc.export
 class Demo(object):
@@ -31,10 +31,7 @@ class Demo(object):
     def hi(self, name):
         return 'Hi, %s' % name
 
-app = server.Application()
-rpc.bind(9151)
-app.register(rpc)
-app.serv_forever()
+main.IOLoop.instance().start()
 ```
 ####sync-client
 ```python
@@ -46,7 +43,7 @@ from fadeaway.core.client import Sync
 
 
 if __name__ == '__main__':
-    ss = ServerProxy(mode=Sync,host='localhost', port=9151).deploy()
+    ss = ServerProxy(Sync, 'localhost', 9151).deploy()
     h = ss.Demo()
     print h.hello('billy') # shall block
     print h.hello('rowland')
@@ -66,7 +63,7 @@ def callback(res, error=None):
     print '[callback]', res
 
 if __name__ == '__main__':
-    ss = ServerProxy(mode=Async, host='localhost', port=9151).deploy()
+    ss = ServerProxy(Async, 'localhost', 9151).deploy()
     h = ss.Demo()
     h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)

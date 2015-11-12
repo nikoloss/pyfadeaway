@@ -31,26 +31,19 @@ class NoSuchOperation(Exception):
 
 class RPCFrontend(Handler):
 
-    def __init__(self):
+    def __init__(self, port):
         super(RPCFrontend, self).__init__()
         self._mapper = {}
         self.flag = zmq.POLLIN  # overwrite the flag
-        self.initialize()
-
-    def initialize(self):
-        if hasattr(self, '_frontend') and self._frontend:
-            self._frontend.close()
-            del self._frontend
         self._frontend = self.ctx.socket(zmq.ROUTER)
-
-    def bind(self, port=9151):
         self._frontend.bind('tcp://*:{port}'.format(port=port))
+        IOLoop.instance().add_handler(self.sock(), self.handle, self.flag)
 
-    def fd(self):
+    def sock(self):
         return self._frontend
 
     def on_read(self):
-        address, data = self.fd().recv_multipart()
+        address, data = self.sock().recv_multipart()
         self.dispatch(address, data)
 
     def export(self, klass):
@@ -66,9 +59,9 @@ class RPCFrontend(Handler):
                 'result': data
             }
             ret.update(kwargs)
-            self.fd().send_multipart([address, json.dumps(ret)])
+            self.sock().send_multipart([address, json.dumps(ret)])
         except Exception as e:
-            self.fd().send_multipart([address, data])
+            self.sock().send_multipart([address, data])
 
     def finish_with_error(self, address, rid, e, **kwargs):
         ret = {
@@ -81,7 +74,7 @@ class RPCFrontend(Handler):
         }
         ret['error'].update(e.__dict__)
         ret.update(kwargs)
-        self.fd().send_multipart([address, json.dumps(ret)])
+        self.sock().send_multipart([address, json.dumps(ret)])
 
     def get_op_func(self, op):
         op = str(op)
@@ -126,15 +119,3 @@ def _task_wrap(func, handler, data_dict):
     except Exception as e:
         IOLoop.instance().add_callback(handler.finish_with_error, address, rid, e)
         Log.get_logger().exception(e)
-
-
-class Application(object):
-
-    def __init__(self):
-        self.ioloop = IOLoop.instance()
-
-    def register(self, frontend):
-        self.ioloop.add_handler(frontend.fd(), frontend.handle, frontend.flag)
-
-    def serv_forever(self):
-        IOLoop.instance().start()
