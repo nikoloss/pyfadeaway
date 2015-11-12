@@ -37,7 +37,7 @@ class RPCFrontend(Handler):
         self.flag = zmq.POLLIN  # overwrite the flag
         self._frontend = self.ctx.socket(zmq.ROUTER)
         self._frontend.bind('tcp://*:{port}'.format(port=port))
-        IOLoop.instance().add_handler(self.sock(), self.handle, self.flag)
+        IOLoop.instance().add_handler(self)
 
     def sock(self):
         return self._frontend

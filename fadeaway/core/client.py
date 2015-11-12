@@ -57,7 +57,7 @@ class AsyncRPCClient(Handler):
         self._buffer = deque()
         self._ioloop = IOLoop.instance()
         self._client = self.ctx.socket(zmq.XREQ)
-        self._ioloop.add_handler(self.sock(), self.handle, self.flag)
+        self._ioloop.add_handler(self)
 
     def add_callback(self, mid, func):
         self._callbacks[mid] = func

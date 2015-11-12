@@ -52,23 +52,23 @@ class Waker(Handler):
     def __init__(self):
         super(Waker, self).__init__()
         self.flag = zmq.POLLIN  # overwrite the flag
-        self.reader = self.ctx.socket(zmq.PULL)
-        self.writer = self.ctx.socket(zmq.PUSH)
-        self.reader.bind('inproc://waker')
-        self.writer.connect('inproc://waker')
+        self._reader = self.ctx.socket(zmq.PULL)
+        self._writer = self.ctx.socket(zmq.PUSH)
+        self._reader.bind('inproc://waker')
+        self._writer.connect('inproc://waker')
 
     def sock(self):
-        return self.reader
+        return self._reader
 
     def wake_up(self):
         try:
-            self.writer.send('x')
+            self._writer.send('x')
         except IOError:
             pass
 
-    def consume(self):
+    def on_read(self):
         try:
-            self.reader.recv()
+            self._reader.recv()
         except IOError:
             pass
 
@@ -107,14 +107,15 @@ class IOLoop(object):
         self._running = False
         self._waker = Waker()
         self._thread_ident = -1
-        self.add_handler(self._waker.sock(), lambda e: self._waker.consume(), self._waker.flag)
+        self.add_handler(self._waker)
 
     def get_zmq_context(self):
         return self._ctx
 
-    def add_handler(self, fd, handler, events):
-        self._handlers[fd] = handler
-        self._poller.register(fd, events | zmq.POLLERR)
+    def add_handler(self, handler):
+        sock = handler.sock()
+        self._handlers[sock] = handler.handle
+        self._poller.register(sock, handler.flag | zmq.POLLERR)
 
     def update_handler(self, fd, events):
         self._poller.modify(fd, events)
