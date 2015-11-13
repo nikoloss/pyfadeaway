@@ -214,11 +214,6 @@ class AsyncServerProxy(object):
 
 
 class ServerProxy(object):
-    def __init__(self, mode, host, port, configs={}):
-        self.host = host
-        self.port = port
-        self.mode = mode
-        self.configs = configs
 
     def __new__(cls, mode, host, port, configs={}):
         if mode == Async:
