@@ -86,7 +86,8 @@ def disconnected():
 
 if __name__ == '__main__':
     ss = ServerProxy(Async, 'localhost', 9151)
-    ss.monitor('wo', connected, disconnected) # monitor(signature, connected_callback, disconnect_callback)
+    # monitor(signature, connected_callback, disconnect_callback
+    ss.monitor('wo', connected, disconnected))
     ss.deploy()
 ```
 
