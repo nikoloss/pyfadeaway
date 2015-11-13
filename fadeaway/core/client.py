@@ -5,6 +5,7 @@ import threading, uuid
 from collections import deque
 from main import Handler
 from main import IOLoop
+from monitor import Supervisor
 
 try:
     import ujson as json
@@ -80,7 +81,7 @@ class AsyncRPCClient(Handler):
         if not zmq.POLLOUT & self.flag:
             self.flag |= zmq.POLLOUT
             # IOLoop.instance().update_handler(self.sock(), self.flag)
-            self._ioloop.add_callback(self._ioloop.update_handler, self.sock(), self.flag)
+            self._ioloop.add_callback(self._ioloop.update_handler, self)
 
     def on_read(self):
         s_data = self.sock().recv()
@@ -100,7 +101,7 @@ class AsyncRPCClient(Handler):
             self.sock().send(buf)
         except IndexError as ex:
             self.flag -= zmq.POLLIN
-            IOLoop.instance().update_handler(self.sock(), self.flag)
+            IOLoop.instance().update_handler(self)
 
 
 class SyncMethodIllusion(object):
@@ -178,19 +179,35 @@ class AsyncClientIllusion(object):
 
 class AsyncServerProxy(object):
 
-    _lock = threading.Lock()
-
     def __init__(self, host, port, configs):
+        self.host = host
+        self.port = port
+        self.configs = configs
+        self._deployed = False
+        self._lock = threading.Lock()
         self._rpclient = AsyncRPCClient()
-        for config, value in configs.iteritems():
+        self._supervisor = Supervisor()
+        self.event = zmq.EVENT_CONNECTED | zmq.EVENT_DISCONNECTED
+        for config, value in self.configs.iteritems():
             self._rpclient.sock().setsockopt(config, value)
-        self._rpclient.connect('tcp://{host}:{port}'.format(host=host, port=port))
         self._ioloop = IOLoop.instance()
-
         if not self._ioloop.is_running():
-            with AsyncServerProxy._lock:
+            with self._lock:
                 if not self._ioloop.is_running():
                     threading.Thread(target=lambda: IOLoop.instance().start()).start()
+
+    def deploy(self):
+        self._rpclient.connect('tcp://{host}:{port}'.format(host=self.host, port=self.port))
+        self._deployed = True
+
+    def monitor(self, prot, available_cb, unavailable_cb):
+        assert not self._deployed
+        self._rpclient.sock().monitor('inproc://{prot}.mo'.format(prot=prot), self.event)
+        self._supervisor.connect(prot)
+        if available_cb:
+            self._supervisor.available_cb = available_cb
+        if unavailable_cb:
+            self._supervisor.unavailable_cb = unavailable_cb
 
     def __getattr__(self, klass):
         return AsyncClientIllusion(self._rpclient, klass)
@@ -203,10 +220,10 @@ class ServerProxy(object):
         self.mode = mode
         self.configs = configs
 
-    def deploy(self):
-        if self.mode == Async:
-            return AsyncServerProxy(self.host, self.port, self.configs)
-        elif self.mode == Sync:
-            return SyncServerProxy(self.host, self.port, self.configs)
+    def __new__(cls, mode, host, port, configs={}):
+        if mode == Async:
+            return AsyncServerProxy(host, port, configs)
+        elif mode == Sync:
+            return SyncServerProxy(host, port, configs)
 
 

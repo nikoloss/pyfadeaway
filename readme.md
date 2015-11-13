@@ -43,7 +43,7 @@ from fadeaway.core.client import Sync
 
 
 if __name__ == '__main__':
-    ss = ServerProxy(Sync, 'localhost', 9151).deploy()
+    ss = ServerProxy(Sync, 'localhost', 9151)
     h = ss.Demo()
     print h.hello('billy') # shall block
     print h.hello('rowland')
@@ -63,11 +63,32 @@ def callback(res, error=None):
     print '[callback]', res
 
 if __name__ == '__main__':
-    ss = ServerProxy(Async, 'localhost', 9151).deploy()
+    ss = ServerProxy(Async, 'localhost', 9151)
+    ss.deploy() # Start ioloop in another thread
     h = ss.Demo()
     h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
+```
+#### monitor
+```python
+# Monitor the Async-Client
+# Usually ZeroMQ itself guarantees usability of sockets
+# Here is a solution of "How do I know if we lose connections?"
+# coding: utf8
+from fadeaway.core.client import ServerProxy
+from fadeaway.core.client import Async
+
+def connected():
+    print 'connected!'
+
+def disconnected():
+    print 'disconnected!'
+
+if __name__ == '__main__':
+    ss = ServerProxy(Async, 'localhost', 9151)
+    ss.monitor('wo', connected, disconnected)
+    ss.deploy()
 ```
 
 ## About Log

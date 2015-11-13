@@ -16,7 +16,8 @@ def callback_for_mix(num_arg, str_arg, list_arg, dict_arg, error=None):
         print error
 
 if __name__ == '__main__':
-    ss = ServerProxy(Async, 'localhost', 9151).deploy()
+    ss = ServerProxy(Async, 'localhost', 9151)
+    ss.deploy()
     d = ss.Demo()
     d.hello('billy').then(callback)
     d.test_number(222).then(callback)

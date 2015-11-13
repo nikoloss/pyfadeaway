@@ -2,7 +2,6 @@
 import thread
 import threading
 import functools
-
 import zmq
 
 from log import Log
@@ -14,6 +13,7 @@ def get_global_context():
     if not context:
         context = zmq.Context()
     return context
+
 
 class Handler(object):
 
@@ -117,12 +117,14 @@ class IOLoop(object):
         self._handlers[sock] = handler.handle
         self._poller.register(sock, handler.flag | zmq.POLLERR)
 
-    def update_handler(self, fd, events):
-        self._poller.modify(fd, events)
+    def update_handler(self, handler):
+        sock = handler.sock()
+        self._poller.modify(sock, handler.flag)
 
-    def remove_handler(self, fd):
-        self._handlers.pop(fd)
-        self._poller.unregister(fd)
+    def remove_handler(self, handler):
+        sock = handler.sock()
+        self._handlers.pop(sock)
+        self._poller.unregister(sock)
 
     def add_callback(self, callback, *args, **kwargs):
         with self._callback_lock:
@@ -153,8 +155,8 @@ class IOLoop(object):
             for callback in callbacks:
                 callback()
             sockets = dict(self._poller.poll(360000))
-            for fd, event in sockets.iteritems():
-                handler = self._handlers[fd]
+            for sock, event in sockets.iteritems():
+                handler = self._handlers[sock]
                 try:
                     handler(event)
                 except Exception as e:

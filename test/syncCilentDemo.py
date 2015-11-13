@@ -4,7 +4,7 @@ from fadeaway.core.client import Sync
 import zmq
 
 if __name__ == '__main__':
-    ss = ServerProxy(Sync, 'localhost', 9151,  {zmq.RCVTIMEO: 5000}).deploy()
+    ss = ServerProxy(Sync, 'localhost', 9151,  {zmq.RCVTIMEO: 5000})
     d = ss.Demo()
     print d.test_string('lucy')
     print d.test_number(1)

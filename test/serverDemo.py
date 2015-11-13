@@ -2,6 +2,7 @@
 import time
 from fadeaway.core import server, main
 
+
 rpc = server.RPCFrontend(9151)
 
 @rpc.export
