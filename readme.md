@@ -75,7 +75,6 @@ if __name__ == '__main__':
 # Monitor the Async-Client
 # Usually ZeroMQ itself guarantees usability of sockets
 # Here is a solution of "How do I know if we lose connections?"
-# coding: utf8
 from fadeaway.core.client import ServerProxy
 from fadeaway.core.client import Async
 
@@ -87,7 +86,7 @@ def disconnected():
 
 if __name__ == '__main__':
     ss = ServerProxy(Async, 'localhost', 9151)
-    ss.monitor('wo', connected, disconnected)
+    ss.monitor('wo', connected, disconnected) # monitor(signature, connected_callback, disconnect_callback)
     ss.deploy()
 ```
 
