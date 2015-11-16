@@ -179,7 +179,7 @@ class AsyncClientIllusion(object):
 
 class AsyncServerProxy(object):
 
-    def __init__(self, host, port, configs):
+    def __init__(self, host, port, configs={}):
         self.host = host
         self.port = port
         self.configs = configs
