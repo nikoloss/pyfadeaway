@@ -2,8 +2,8 @@
 import time
 from fadeaway.core import server, main
 
-
 rpc = server.RPCFrontend(9151)
+
 
 @rpc.export
 class Demo(object):
@@ -24,7 +24,7 @@ class Demo(object):
             return arg
         except TypeError:
             raise Exception('number expected')
-    
+
     def test_array(self, arg):
         try:
             assert type(arg) is list
@@ -49,5 +49,5 @@ class Demo(object):
         except:
             raise Exception('demand not satisfied')
 
-main.IOLoop.instance().start()
 
+main.IOLoop.instance().start()

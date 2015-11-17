@@ -105,6 +105,7 @@ class IOLoop(object):
         self._ctx = zmq.Context()
         self._poller = zmq.Poller()
         self._running = False
+        self._shutdown = False
         self._waker = Waker()
         self._thread_ident = -1
         self.add_handler(self._waker)
@@ -140,6 +141,9 @@ class IOLoop(object):
         except Exception, e:
             Log.get_logger().exception(e)
 
+    def shutdown(self):
+        self._shutdown = True
+
     def start(self):
 
         with IOLoop._instance_lock:
@@ -148,7 +152,7 @@ class IOLoop(object):
 
         self._thread_ident = thread.get_ident()
 
-        while 1:
+        while not self._shutdown:
             with self._callback_lock:
                 callbacks = self._callbacks
                 self._callbacks = []

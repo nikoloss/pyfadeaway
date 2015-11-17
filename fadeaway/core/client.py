@@ -184,6 +184,7 @@ class AsyncServerProxy(object):
         self.port = port
         self.configs = configs
         self._deployed = False
+        self._monitored = False
         self._lock = threading.Lock()
         self._rpclient = AsyncRPCClient()
         self._supervisor = Supervisor()
@@ -202,12 +203,24 @@ class AsyncServerProxy(object):
 
     def monitor(self, prot, available_cb, unavailable_cb):
         assert not self._deployed
-        self._rpclient.sock().monitor('inproc://{prot}.mo'.format(prot=prot), self.event)
-        self._supervisor.connect(prot)
-        if available_cb:
-            self._supervisor.available_cb = available_cb
-        if unavailable_cb:
-            self._supervisor.unavailable_cb = unavailable_cb
+        with self._lock:
+            assert not self._deployed
+            self._rpclient.sock().monitor('inproc://{prot}.mo'.format(prot=prot), self.event)
+            self._supervisor.connect(prot)
+            if available_cb:
+                self._supervisor.available_cb = available_cb
+            if unavailable_cb:
+                self._supervisor.unavailable_cb = unavailable_cb
+            self._monitored = True
+
+    def quit(self):
+        if self._monitored:
+            self._ioloop.remove_handler(self._supervisor)
+            del self._supervisor
+        if self._deployed:
+            self._ioloop.remove_handler(self._rpclient)
+            del self._rpclient
+        del self
 
     def __getattr__(self, klass):
         return AsyncClientIllusion(self._rpclient, klass)
