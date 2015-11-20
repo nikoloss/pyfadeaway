@@ -40,7 +40,7 @@ main.IOLoop.instance().start()
 # The Client will work in a synchronous way
 
 from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Sync
+from fadeaway.core.client import Sync 
 
 
 if __name__ == '__main__':
