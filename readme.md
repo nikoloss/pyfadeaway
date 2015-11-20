@@ -20,7 +20,7 @@ $> sudo python setup.py install
 import time
 from fadeaway.core import server, main
 
-rpc = server.RPCFrontend(9151)
+rpc = server.RemoteSrv()
 
 @rpc.export
 class Demo(object):
@@ -31,6 +31,7 @@ class Demo(object):
     def hi(self, name):
         return 'Hi, %s' % name
 
+rpc.listen(9151)
 main.IOLoop.instance().start()
 ```
 ####sync-client
@@ -69,6 +70,32 @@ if __name__ == '__main__':
     h.hello('billy').then(callback) # set a callback
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
+```
+#### scale-service
+```python
+# broker.py is a proxy of a certain kind of services which be deployed distributedly
+# first port is for clients, second one is for servers to connect
+from fadeaway.core import device
+
+if __name__ == '__main__':
+    device.Broker(9151, 9152)
+# serv.py
+import time
+from fadeaway.core import server, main
+
+rpc = server.RemoteSrv()
+
+@rpc.export
+class Demo(object):
+    def hello(self, name):
+        time.sleep(5)   # That will show how multi-threads work
+        return "Hello, %s" % name
+
+    def hi(self, name):
+        return 'Hi, %s' % name
+
+rpc.connect(('localhost', 9152))   # notice here
+main.IOLoop.instance().start()
 ```
 #### monitor
 ```python

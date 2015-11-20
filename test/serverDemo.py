@@ -2,7 +2,7 @@
 import time
 from fadeaway.core import server, main
 
-rpc = server.RPCFrontend(9151)
+rpc = server.RemoteSrv()
 
 
 @rpc.export
@@ -49,5 +49,6 @@ class Demo(object):
         except:
             raise Exception('demand not satisfied')
 
-
+rpc.listen(9151)
+# rpc.connect(('localhost', 9152))
 main.IOLoop.instance().start()

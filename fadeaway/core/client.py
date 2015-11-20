@@ -21,7 +21,7 @@ APPLICATION_ERROR = -32500
 class SyncRPCClient(Handler):
     def __init__(self):
         super(SyncRPCClient, self).__init__()
-        self._client = self.ctx.socket(zmq.XREQ)
+        self._client = self.ctx.socket(zmq.REQ)
 
     def sock(self):
         return self._client
