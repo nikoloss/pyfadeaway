@@ -72,6 +72,7 @@ if __name__ == '__main__':
     h.hi('lucy').then(callback)
 ```
 #### scale-service
+broker.py
 ```python
 # broker.py is a proxy of a certain kind of services which be deployed distributedly
 # first port is for clients, second one is for servers to connect
@@ -79,6 +80,9 @@ from fadeaway.core import device
 
 if __name__ == '__main__':
     device.Broker(9151, 9152)
+```    
+serv.py
+```python
 # serv.py
 import time
 from fadeaway.core import server, main
