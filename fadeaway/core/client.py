@@ -5,7 +5,9 @@ import threading, uuid
 from collections import deque
 from main import Handler
 from main import IOLoop
+from main import Timeout
 from monitor import Supervisor
+from error import *
 
 try:
     import ujson as json
@@ -60,8 +62,19 @@ class AsyncRPCClient(Handler):
         self._client = self.ctx.socket(zmq.XREQ)
         self._ioloop.add_handler(self)
 
-    def add_callback(self, mid, func):
-        self._callbacks[mid] = func
+    def add_callback(self, mid, func, **kwargs):
+        timeout = kwargs.get('timeout')
+        timer = None
+        if timeout:
+            at = time.time() + timeout
+            timer = Timeout(at, self.callback_timeout, mid)
+        self._callbacks[mid] = (func, timer)
+
+    def callback_timeout(self, mid):
+        if self._callbacks.get(mid):
+            callback, timer = self._callbacks.pop(mid)
+            timer.cancelled = True
+            callback(None, error=CallTimeout('time out'))
 
     def connect(self, protocol):
         self._client.connect(protocol)
@@ -87,13 +100,14 @@ class AsyncRPCClient(Handler):
         s_data = self.sock().recv()
         data = json.loads(s_data)
         mid = data.get('id')
-        callback = self._callbacks.pop(mid)
-        e = None
-        if data.get('error'):
-            error = data['error']
-            e = Exception(error.get('message'))
-            e.code = error['code'] if error.get('code') else APPLICATION_ERROR
-        callback(data.get('result'), error=e)
+        if self._callbacks.get(mid):
+            callback, timer = self._callbacks.pop(mid)
+            e = None
+            if data.get('error'):
+                error = data['error']
+                e = Exception(error.get('message'))
+                e.code = error['code'] if error.get('code') else APPLICATION_ERROR
+            callback(data.get('result'), error=e)
 
     def on_write(self):
         try:
@@ -158,10 +172,10 @@ class AsyncMethodIllusion(object):
         self.ex_params = kwargs
         return self
 
-    def then(self, func):
+    def then(self, func, **kwargs):
         '''callback'''
         mid = str(uuid.uuid4())
-        self._rpclient.add_callback(mid, func)
+        self._rpclient.add_callback(mid, func, **kwargs)
         self._rpclient.send(self._klass, self._method, mid, *self.params, **self.ex_params)
 
 

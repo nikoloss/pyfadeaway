@@ -3,23 +3,19 @@ import thread
 import threading
 import functools
 import zmq
+import numbers
+import heapq
+import time
 
 from log import Log
 
-context = None
-
-def get_global_context():
-    global context
-    if not context:
-        context = zmq.Context()
-    return context
+context = zmq.Context()
 
 
 class Handler(object):
-
     def __init__(self):
         self.flag = zmq.POLLIN | zmq.POLLOUT
-        self.ctx = get_global_context()
+        self.ctx = context
         self.stack_context = {}
 
     def sock(self):
@@ -48,7 +44,6 @@ class Handler(object):
 
 
 class Waker(Handler):
-
     def __init__(self):
         super(Waker, self).__init__()
         self.flag = zmq.POLLIN  # overwrite the flag
@@ -73,10 +68,31 @@ class Waker(Handler):
             pass
 
 
-class IOLoop(object):
+class Timeout(object):
+    __slots__ = ['deadline', 'callback', 'cancelled']
 
+    def __init__(self, deadline, callback, *args, **kwargs):
+        if not isinstance(deadline, numbers.Real):
+            raise TypeError("Unsupported deadline %r" % deadline)
+        self.deadline = deadline
+        self.callback = functools.partial(callback, *args, **kwargs)
+        self.cancelled = False
+        IOLoop.instance().add_callback(IOLoop.instance().add_timeout, self)
+
+    def cancel(self):
+        self.cancelled = True
+
+    def __le__(self, other):
+        return self.deadline <= other.deadline
+
+    def __lt__(self, other):
+        return self.deadline < other.deadline
+
+
+class IOLoop(object):
     _instance_lock = threading.Lock()
     _local = threading.local()
+    _POLL_TIME = 3600.0
 
     @staticmethod
     def instance():
@@ -102,6 +118,7 @@ class IOLoop(object):
         self._handlers = {}
         self._callbacks = []
         self._callback_lock = threading.Lock()
+        self._timeouts = []
         self._ctx = zmq.Context()
         self._poller = zmq.Poller()
         self._running = False
@@ -144,6 +161,9 @@ class IOLoop(object):
     def shutdown(self):
         self._shutdown = True
 
+    def add_timeout(self, timeout):
+        heapq.heappush(self._timeouts, timeout)
+
     def start(self):
 
         with IOLoop._instance_lock:
@@ -153,12 +173,39 @@ class IOLoop(object):
         self._thread_ident = thread.get_ident()
 
         while not self._shutdown:
+
+            poll_time = IOLoop._POLL_TIME
+
             with self._callback_lock:
                 callbacks = self._callbacks
                 self._callbacks = []
+
             for callback in callbacks:
-                callback()
-            sockets = dict(self._poller.poll(360000))
+                self._run_callback(callback)
+            # 为什么把超时列表放到callbacks执行之后读取?
+            # 因为:
+            # 1.add_timeout的动作也是通过add_callback来完成的,callbacks执行可能会影响到timeouts长度
+            # 2.callback在执行的时候也会耽误一些时间, 在callbacks执行之后判断timeout才是比较准确的
+            due_timeouts = []
+            now = time.time()
+            while self._timeouts:
+                lastest_timeout = heapq.heappop(self._timeouts)
+                if not lastest_timeout.cancelled:
+                    if lastest_timeout.deadline <= now:
+                        due_timeouts.append(lastest_timeout)
+                    else:
+                        # 拿多了, 推进去, 顺便把poll()的时间确定出来
+                        heapq.heappush(self._timeouts, lastest_timeout)
+                        poll_time = lastest_timeout.deadline - time.time()  # 这个值有可能是负数,
+                        poll_time = poll_time if poll_time > 0 else 0.0  # 为负数的话变为0
+                        break
+            for timeout in due_timeouts:
+                self._run_callback(timeout.callback)
+
+            if self._callbacks:
+                poll_time = 0.0
+
+            sockets = dict(self._poller.poll(poll_time * 1000))
             for sock, event in sockets.iteritems():
                 handler = self._handlers[sock]
                 try:
@@ -166,5 +213,4 @@ class IOLoop(object):
                 except Exception as e:
                     Log.get_logger().exception(e)
 
-
-
+        self._running = False
