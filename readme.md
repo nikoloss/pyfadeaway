@@ -67,7 +67,7 @@ if __name__ == '__main__':
     ss = ServerProxy(Async, 'localhost', 9151)
     ss.deploy() # Start ioloop in another thread
     h = ss.Demo()
-    h.hello('billy').then(callback) # set a callback
+    h.hello('billy').then(callback, timeout=3) # set a callback, timeout 3 seconds
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
 ```
