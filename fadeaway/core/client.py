@@ -1,7 +1,8 @@
 # coding: utf8
 import zmq
 import time
-import threading, uuid
+import threading
+import protocol
 from collections import deque
 from main import Handler
 from main import IOLoop
@@ -62,6 +63,11 @@ class AsyncRPCClient(Handler):
         self._client = self.ctx.socket(zmq.XREQ)
         self._ioloop.add_handler(self)
 
+    def set_flag(self, flag):
+        if flag != self.flag:
+            self.flag = flag
+            self._ioloop.add_callback(self._ioloop.update_handler, self)
+
     def add_callback(self, mid, func, **kwargs):
         timeout = kwargs.get('timeout')
         timer = None
@@ -82,19 +88,19 @@ class AsyncRPCClient(Handler):
     def sock(self):
         return self._client
 
-    def send(self, klass, method, mid, *args, **kwargs):
-        data = {
-            'id': mid,
-            'method': '{klass}->{method}'.format(klass=klass, method=method),
-            'params': args,
-            'ex_params': kwargs
-        }
-        s_data = json.dumps(data)
+    def request(self, req, callback, **conf):
+        mid = req.mid
+        timeout = conf.get('timeout')
+        timer = None
+        if timeout:
+            at = time.time() + timeout
+            timer = Timeout(at, self.callback_timeout, mid)
+            req.expire_at = at
+        self._callbacks[mid] = (callback, timer)
+        s_data = json.dumps(req.box())
         self._buffer.append(s_data)
         if not zmq.POLLOUT & self.flag:
-            self.flag |= zmq.POLLOUT
-            # IOLoop.instance().update_handler(self.sock(), self.flag)
-            self._ioloop.add_callback(self._ioloop.update_handler, self)
+            self.set_flag(self.flag | zmq.POLLOUT)
 
     def on_read(self):
         s_data = self.sock().recv()
@@ -114,8 +120,7 @@ class AsyncRPCClient(Handler):
             buf = self._buffer.popleft()
             self.sock().send(buf)
         except IndexError as ex:
-            self.flag -= zmq.POLLIN
-            IOLoop.instance().update_handler(self)
+            self.set_flag(self.flag - zmq.POLLOUT)
 
 
 class SyncMethodIllusion(object):
@@ -168,15 +173,14 @@ class AsyncMethodIllusion(object):
         self._rpclient = rpclient
 
     def __call__(self, *args, **kwargs):
-        self.params = args
-        self.ex_params = kwargs
+        self.args = args
+        self.kwargs = kwargs
         return self
 
     def then(self, func, **kwargs):
         '''callback'''
-        mid = str(uuid.uuid4())
-        self._rpclient.add_callback(mid, func, **kwargs)
-        self._rpclient.send(self._klass, self._method, mid, *self.params, **self.ex_params)
+        request = protocol.Request.new(self._klass, self._method, self.args, self.kwargs)
+        self._rpclient.request(request, func, **kwargs)
 
 
 class AsyncClientIllusion(object):
