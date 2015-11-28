@@ -19,7 +19,7 @@ $> sudo python setup.py install
 # outside world by using a decorator, "export".
 import time
 from fadeaway.core import main
-from fadeaway.device import server
+from fadeaway import server
 
 rpc = server.RemoteSrv()
 
@@ -40,8 +40,8 @@ main.IOLoop.instance().start()
 # Sync-Client
 # The Client will work in a synchronous way
 
-from fadeaway.device.client import ServerProxy
-from fadeaway.device.client import Sync 
+from fadeaway.client import ServerProxy
+from fadeaway.client import Sync 
 
 
 if __name__ == '__main__':
@@ -57,8 +57,8 @@ if __name__ == '__main__':
 # The Client will work in an asynchronous way which would not cause any 
 # blocking calls which means you have to set callback function to every 
 # remote function call
-from fadeaway.device.client import ServerProxy
-from fadeaway.device.client import Async
+from fadeaway.client import ServerProxy
+from fadeaway.client import Async
 
 def callback(res, error=None):
     # Any raised exception will set to the parameter "error"
@@ -87,7 +87,7 @@ serv.py
 # serv.py
 import time
 from fadeaway.core import main
-from fadeaway.device import server
+from fadeaway import server
 
 rpc = server.RemoteSrv()
 
@@ -108,8 +108,8 @@ main.IOLoop.instance().start()
 # Monitor the Async-Client
 # Usually ZeroMQ itself guarantees usability of sockets
 # Here is a solution of "How do I know if we lose connections?"
-from fadeaway.device.client import ServerProxy
-from fadeaway.device.client import Async
+from fadeaway.client import ServerProxy
+from fadeaway.client import Async
 
 def connected():
     print 'connected!'
