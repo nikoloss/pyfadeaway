@@ -3,7 +3,8 @@ import time
 import functools
 
 import zmq
-
+import protocol
+from error import *
 try:
     import ujson as json
 except ImportError:
@@ -17,17 +18,6 @@ from log import Log
 MAX_WORKERS = 16
 executor = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
-
-class NotPortSpecified(Exception):
-    pass
-
-
-class RedefineError(Exception):
-    pass
-
-
-class NoSuchOperation(Exception):
-    pass
 
 
 class RemoteSrv(Handler):
@@ -57,73 +47,53 @@ class RemoteSrv(Handler):
         self._mapper[class_name] = klass
         return klass
 
-    def finish(self, frame, rid, data, **kwargs):
-        ff = frame
+    def finish(self, frame):
         try:
-            ret = {
-                'id': rid,
-                'jsonrpc': '2.0',
-                'result': data
-            }
-            ret.update(kwargs)
-            ff.append(json.dumps(ret))
-            self.sock().send_multipart(ff)
-        except Exception as e:
-            frame.append(data)
             self.sock().send_multipart(frame)
+        except Exception as e:
+            pass
 
-    def finish_with_error(self, frame, rid, e, **kwargs):
-        ret = {
-            'id': rid,
-            'jsonrpc': '2.0',
-            'error': {
-                'code': -32600,
-                'message': str(e)
-            }
-        }
-        ret['error'].update(e.__dict__)
-        ret.update(kwargs)
-        frame.append(json.dumps(ret))
-        self.sock().send_multipart(frame)
 
-    def get_op_func(self, op):
-        op = str(op)
-        class_name, method_name = op.split('->')
-        if class_name not in self._mapper:
-            raise NoSuchOperation('not support operation[%s]' % op)
-        clazz = self._mapper.get(class_name)
+    def get_ref(self, klass, method, args, kwargs):
+        if klass not in self._mapper:
+            raise RefNotFound('"%s" not found' % klass)
+        clazz = self._mapper.get(klass)
         instance = clazz()
-        func = getattr(clazz, method_name)
-        return functools.partial(func, instance)
+        func = getattr(clazz, method)
+        return functools.partial(func, instance, *args, **kwargs)
 
     def dispatch(self, frame):
         rid = None
         data = frame[-1]
         frame.remove(data)
         try:
-            data_dict = json.loads(data)
-            operation = data_dict.pop('method')
-            rid = data_dict.get('id')
-            func = self.get_op_func(operation)
-            executor.submit(_task_wrap, func, self, frame, data_dict)
+            request = protocol.Request.loads(data)
+            executor.submit(_async_run, self, request, self.finish, frame)
             Log.get_logger().debug('[request] %r', data)
         except Exception, e:
             Log.get_logger().exception(e)
-            e.code = -32700
-            if rid:
-                self.finish_with_error(frame, rid, e)
 
 
-def _task_wrap(func, handler, frame, data_dict):
-    params = data_dict.get('params')
-    rid = data_dict.get('id')
+def _async_run(handler, request, callback, frame):
+    tik = time.time()
+    response = protocol.Response.to(request)
     try:
-        tik = time.time()
-        res = func(*params)
+        klass = request.klass
+        method = request.method
+        args = request.args
+        kwargs = request.kwargs
+        func = handler.get_ref(klass, method, args, kwargs)
+        res = func()
         tok = time.time()
-        costs = '%.5f' % (tok - tik)
-        IOLoop.instance().add_callback(handler.finish, frame, rid, res, costs=costs)
+        costs = tok - tik
+        response.set_result(res)
+        response.set_costs(costs)
         Log.get_logger().debug('[response] [%s] takes [%s] seconds', res, costs)
     except Exception as e:
-        IOLoop.instance().add_callback(handler.finish_with_error, frame, rid, e)
+        tok = time.time()
+        costs = tok - tik
+        response.set_error(e)
+        response.set_costs(costs)
         Log.get_logger().exception(e)
+    frame.append(response.box())
+    IOLoop.instance().add_callback(callback, frame)

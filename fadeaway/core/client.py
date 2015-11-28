@@ -18,8 +18,6 @@ except ImportError:
 Sync = 0
 Async = 1
 
-APPLICATION_ERROR = -32500
-
 
 class SyncRPCClient(Handler):
     def __init__(self):
@@ -32,25 +30,17 @@ class SyncRPCClient(Handler):
     def connect(self, protocol):
         self._client.connect(protocol)
 
-    def send(self, klass, method, mid, *args, **kwargs):
-        data = {
-            'id': mid,
-            'method': '{klass}->{method}'.format(klass=klass, method=method),
-            'params': args,
-            'ex_params': kwargs
-        }
-        s_data = json.dumps(data)
-        self.sock().send(s_data)
+    def send(self, request):
+        self.sock().send(request.box())
 
     def recv(self):
-        s_data = self.sock().recv()
-        data = json.loads(s_data)
-        if data.get('error'):
-            error = data['error']
-            e = Exception(error.get('message'))
-            e.code = error['code'] if error.get('code') else APPLICATION_ERROR
+        s = self.sock().recv()
+        response = protocol.Response.loads(s)
+        if response.error:
+            e = indexes[response.status](response.error) if indexes.get(response.status) else Exception(
+                    response.error)
             raise e
-        return data.get('result')
+        return response.result
 
 
 class AsyncRPCClient(Handler):
@@ -97,23 +87,21 @@ class AsyncRPCClient(Handler):
             timer = Timeout(at, self.callback_timeout, mid)
             req.expire_at = at
         self._callbacks[mid] = (callback, timer)
-        s_data = json.dumps(req.box())
-        self._buffer.append(s_data)
+        s = req.box()
+        self._buffer.append(s)
         if not zmq.POLLOUT & self.flag:
             self.set_flag(self.flag | zmq.POLLOUT)
 
     def on_read(self):
-        s_data = self.sock().recv()
-        data = json.loads(s_data)
-        mid = data.get('id')
-        if self._callbacks.get(mid):
-            callback, timer = self._callbacks.pop(mid)
+        s = self.sock().recv()
+        response = protocol.Response.loads(s)
+        if self._callbacks.get(response.mid):
             e = None
-            if data.get('error'):
-                error = data['error']
-                e = Exception(error.get('message'))
-                e.code = error['code'] if error.get('code') else APPLICATION_ERROR
-            callback(data.get('result'), error=e)
+            callback, timer = self._callbacks.pop(response.mid)
+            if response.error:
+                e = indexes[response.status](response.error) if indexes.get(response.status) else Exception(
+                    response.error)
+            callback(response.result, error=e)
 
     def on_write(self):
         try:
@@ -133,8 +121,9 @@ class SyncMethodIllusion(object):
 
     def __call__(self, *args, **kwargs):
         mid = str(time.time())
+        request = protocol.Request.new(self._klass, self._method, args, kwargs)
         with SyncMethodIllusion._lock:
-            self._rpclient.send(self._klass, self._method, mid, *args, **kwargs)
+            self._rpclient.send(request)
             return self._rpclient.recv()
 
     def __del__(self):
@@ -196,7 +185,6 @@ class AsyncClientIllusion(object):
 
 
 class AsyncServerProxy(object):
-
     def __init__(self, host, port, configs={}):
         self.host = host
         self.port = port
@@ -245,7 +233,6 @@ class AsyncServerProxy(object):
 
 
 class ServerProxy(object):
-
     def __new__(cls, mode, host, port, configs={}):
         if mode == Async:
             return AsyncServerProxy(host, port, configs)
