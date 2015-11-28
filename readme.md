@@ -77,10 +77,10 @@ broker.py
 ```python
 # broker.py is a proxy of a certain kind of services which be deployed distributedly
 # first port is for clients, second one is for servers to connect
-from fadeaway.device import device
+from fadeaway.device import broker
 
 if __name__ == '__main__':
-    device.Broker(9151, 9152)
+    broker.QueueBroker(9151, 9152)
 ```    
 serv.py
 ```python

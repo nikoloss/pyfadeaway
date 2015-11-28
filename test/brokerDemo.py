@@ -1,6 +1,6 @@
 # coding: utf8
-from fadeaway import device
+from fadeaway import broker
 
 
 if __name__ == '__main__':
-    device.Broker(9151, 9152)
+    broker.QueueBroker(9151, 9152)
