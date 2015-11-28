@@ -82,6 +82,7 @@ def _async_run(handler, request, callback, frame):
         method = request.method
         args = request.args
         kwargs = request.kwargs
+        expire_at = request.expire_at
         func = handler.get_ref(klass, method, args, kwargs)
         res = func()
         tok = time.time()
@@ -89,6 +90,8 @@ def _async_run(handler, request, callback, frame):
         response.set_result(res)
         response.set_costs(costs)
         Log.get_logger().debug('[response] [%s] takes [%s] seconds', res, costs)
+        if tok > expire_at > 0:
+            return
     except Exception as e:
         tok = time.time()
         costs = tok - tik
