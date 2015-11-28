@@ -2,9 +2,9 @@
 
 import zmq
 import struct
-from main import IOLoop
-from main import Handler
-from log import Log
+from core.main import IOLoop
+from core.main import Handler
+from core.log import Log
 
 class Supervisor(Handler):
 

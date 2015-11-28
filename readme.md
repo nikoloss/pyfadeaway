@@ -1,10 +1,10 @@
 ﻿The PyFadeaway module
 ===
 ##Introduction
-Pyfadeaway is a multi-task RPC/json-rpc2.0 module also easy to use.
+Pyfadeaway is a multi-task RPC module also easy to use.
 You can build distributed application based on a good performance RPC 
 framwork with minimal effort.</br>
-Pyfadeaway是一个基于多线程的RPC/json-rpc2.0 的模块，它非常小巧，易读，易用。
+Pyfadeaway是一个基于多线程的RPC 的模块，它非常小巧，易读，易用。
 你可以轻而易举的使用它来构建高性能的rpc应用
 ##Installation
 ```
@@ -18,7 +18,8 @@ $> sudo python setup.py install
 # This is a server demo, it shows a simply way to export a function to the
 # outside world by using a decorator, "export".
 import time
-from fadeaway.core import server, main
+from fadeaway.core import main
+from fadeaway.device import server
 
 rpc = server.RemoteSrv()
 
@@ -39,8 +40,8 @@ main.IOLoop.instance().start()
 # Sync-Client
 # The Client will work in a synchronous way
 
-from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Sync 
+from fadeaway.device.client import ServerProxy
+from fadeaway.device.client import Sync 
 
 
 if __name__ == '__main__':
@@ -56,8 +57,8 @@ if __name__ == '__main__':
 # The Client will work in an asynchronous way which would not cause any 
 # blocking calls which means you have to set callback function to every 
 # remote function call
-from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Async
+from fadeaway.device.client import ServerProxy
+from fadeaway.device.client import Async
 
 def callback(res, error=None):
     # Any raised exception will set to the parameter "error"
@@ -76,7 +77,7 @@ broker.py
 ```python
 # broker.py is a proxy of a certain kind of services which be deployed distributedly
 # first port is for clients, second one is for servers to connect
-from fadeaway.core import device
+from fadeaway.device import device
 
 if __name__ == '__main__':
     device.Broker(9151, 9152)
@@ -85,7 +86,8 @@ serv.py
 ```python
 # serv.py
 import time
-from fadeaway.core import server, main
+from fadeaway.core import main
+from fadeaway.device import server
 
 rpc = server.RemoteSrv()
 
@@ -106,8 +108,8 @@ main.IOLoop.instance().start()
 # Monitor the Async-Client
 # Usually ZeroMQ itself guarantees usability of sockets
 # Here is a solution of "How do I know if we lose connections?"
-from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Async
+from fadeaway.device.client import ServerProxy
+from fadeaway.device.client import Async
 
 def connected():
     print 'connected!'

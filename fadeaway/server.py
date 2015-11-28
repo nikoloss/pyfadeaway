@@ -3,17 +3,17 @@ import time
 import functools
 
 import zmq
-import protocol
-from error import *
+from core import protocol
+from core.error import *
 try:
     import ujson as json
 except ImportError:
     import json
 from concurrent import futures
 
-from main import Handler
-from main import IOLoop
-from log import Log
+from core.main import Handler
+from core.main import IOLoop
+from core.log import Log
 
 MAX_WORKERS = 16
 executor = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
@@ -25,15 +25,17 @@ class RemoteSrv(Handler):
         super(RemoteSrv, self).__init__()
         self._mapper = {}
         self.flag = zmq.POLLIN  # overwrite the flag
-        self._rpcsrv = self.ctx.socket(zmq.XREP)
-        IOLoop.instance().add_handler(self)
 
     def listen(self, port):
+        self._rpcsrv = self.ctx.socket(zmq.XREP)
         self._rpcsrv.bind('tcp://*:{port}'.format(port=port))
+        IOLoop.instance().add_handler(self)
 
     def connect(self, pairs):
         host, port = pairs
+        self._rpcsrv = self.ctx.socket(zmq.XREP)
         self._rpcsrv.connect('tcp://{host}:{port}'.format(host=host, port=port))
+        IOLoop.instance().add_handler(self)
 
     def sock(self):
         return self._rpcsrv

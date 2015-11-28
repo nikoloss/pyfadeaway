@@ -1,7 +1,6 @@
 # coding: utf8
-from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Sync
-import zmq
+from fadeaway.client import ServerProxy
+from fadeaway.client import Sync
 
 if __name__ == '__main__':
     ss = ServerProxy(Sync, 'localhost', 9151)

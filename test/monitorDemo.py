@@ -1,6 +1,6 @@
 # coding: utf8
-from fadeaway.core.client import ServerProxy
-from fadeaway.core.client import Async
+from fadeaway.client import ServerProxy
+from fadeaway.client import Async
 
 def connected():
     print 'connected!'

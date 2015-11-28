@@ -92,7 +92,6 @@ class Timeout(object):
 class IOLoop(object):
     _instance_lock = threading.Lock()
     _local = threading.local()
-    _POLL_TIME = 3600.0
 
     @staticmethod
     def instance():
@@ -114,15 +113,17 @@ class IOLoop(object):
         """Returns true if the singleton instance has been created."""
         return hasattr(IOLoop, "_instance")
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self._handlers = {}
         self._callbacks = []
         self._callback_lock = threading.Lock()
         self._timeouts = []
+        self._idle_call = lambda: None
         self._ctx = zmq.Context()
         self._poller = zmq.Poller()
         self._running = False
         self._shutdown = False
+        self._idle_timeout = 3600.0
         self._waker = Waker()
         self._thread_ident = -1
         self.add_handler(self._waker)
@@ -164,6 +165,10 @@ class IOLoop(object):
     def add_timeout(self, timeout):
         heapq.heappush(self._timeouts, timeout)
 
+    def set_idle(self, timeout, idle_callback):
+        self._idle_timeout = timeout
+        self._idle_call = idle_callback
+
     def start(self):
 
         with IOLoop._instance_lock:
@@ -174,7 +179,7 @@ class IOLoop(object):
 
         while not self._shutdown:
 
-            poll_time = IOLoop._POLL_TIME
+            poll_time = self._idle_timeout
 
             with self._callback_lock:
                 callbacks = self._callbacks
@@ -206,11 +211,14 @@ class IOLoop(object):
                 poll_time = 0.0
 
             sockets = dict(self._poller.poll(poll_time * 1000))
-            for sock, event in sockets.iteritems():
-                handler = self._handlers[sock]
-                try:
-                    handler(event)
-                except Exception as e:
-                    Log.get_logger().exception(e)
+            if sockets:
+                for sock, event in sockets.iteritems():
+                    handler = self._handlers[sock]
+                    try:
+                        handler(event)
+                    except Exception as e:
+                        Log.get_logger().exception(e)
+            else:
+                self._idle_call()
 
         self._running = False

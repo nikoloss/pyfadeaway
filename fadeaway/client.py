@@ -1,14 +1,17 @@
 # coding: utf8
-import zmq
 import time
 import threading
-import protocol
 from collections import deque
-from main import Handler
-from main import IOLoop
-from main import Timeout
-from monitor import Supervisor
-from error import *
+
+import zmq
+
+from core import protocol
+from core.main import Handler
+from core.main import IOLoop
+from core.main import Timeout
+from fadeaway.monitor import Supervisor
+from core.error import *
+
 
 try:
     import ujson as json

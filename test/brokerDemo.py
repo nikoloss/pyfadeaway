@@ -1,5 +1,5 @@
 # coding: utf8
-from fadeaway.core import device
+from fadeaway import device
 
 
 if __name__ == '__main__':
