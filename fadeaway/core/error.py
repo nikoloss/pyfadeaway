@@ -24,3 +24,7 @@ class ClassBlockedTooLong(Exception):
 @remote_raise
 class RefNotFound(Exception):
     code = 300
+
+@remote_raise
+class CallUnavailable(Exception):
+    code = 400

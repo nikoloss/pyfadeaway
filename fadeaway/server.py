@@ -21,7 +21,7 @@ executor = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 
 
-class RemoteSrv(Handler):
+class ThreadedHandler(Handler):
 
     def export(self, klass):
         class_name = klass.__name__
@@ -29,7 +29,7 @@ class RemoteSrv(Handler):
         return klass
 
     def __init__(self):
-        super(RemoteSrv, self).__init__()
+        super(ThreadedHandler, self).__init__()
         self._buffer = deque()
         self._mapper = {}
         self.flag = zmq.POLLIN  # overwrite the flag

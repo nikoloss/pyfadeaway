@@ -5,7 +5,7 @@ from fadeaway.core import main
 from fadeaway import server
 
 
-rpc = server.RemoteSrv()
+rpc = server.ThreadedHandler()
 
 
 @rpc.export
