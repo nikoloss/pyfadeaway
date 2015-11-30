@@ -48,6 +48,7 @@ class Worker(object):
         self.capacity = capacity
 
     def __le__(self, other):
+        # 把小顶堆变成大顶堆
         return other.capacity <= self.capacity
 
     def __lt__(self, other):
