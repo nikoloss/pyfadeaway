@@ -1,32 +1,91 @@
 # coding: utf8
+# Reliable Patterns
+# Projects in "worker" folder covered advanced uses of fadeaway
+#
+#     **********             **********              **********
+#     * client *             * client *              * client *
+#     *  XREQ  *             *  XREQ  *              *  XREQ  *
+#     **********             **********              **********
+#          \                     |                       /
+#            \                   |                     /
+#              ------------------|--------------------
+#                                |
+#                         ****************
+#                         *    ROUTER    *
+#                         * workers heap *
+#                         *   heartbeat  *
+#                         *    ROUTER    *
+#                         ****************
+#                                |
+#              ------------------|-------------------
+#            /                   |                    \
+#          /                     |                      \
+#     **********            **********               **********
+#     * DEALER *            * DEALER *               * DEALER *
+#     * Worker *            * Worker *               * Worker *
+#     **********            **********               **********
+#
+# Broker detects worker, so if a worker dies while idle, the Broker
+# removes it from its worker queue until the worker sends it anything(
+# response or heartbeat).
+# But notice it may takes a while detecting worker dies, the requests
+# at that time will be abandoned
+
 import time
 import zmq
-
+import heapq
 from collections import deque
 from fadeaway.core import error
 from fadeaway.core import main
 from fadeaway.core import protocol
+from fadeaway.server import MAX_WORKERS
 
 
-class NoAvailableWorker(Exception):
-    pass
+class Worker(object):
+    def __init__(self, ident, capacity):
+        self.ident = ident
+        self.ready_at = time.time()
+        self.capacity = capacity
 
+    def __le__(self, other):
+        return other.capacity <= self.capacity
 
-
+    def __lt__(self, other):
+        return other.capacity < self.capacity
 
 
 class WorkerList(object):
+    _HEARTBEAT = 3
 
     def __init__(self):
-        pass
+        self.workers = []
 
     def next(self):
-        pass
+        now = time.time()
+        for x in range(len(self.workers)):
+            worker = heapq.heappop(self.workers)
+            if (now - worker.ready_at) < 2 * WorkerList._HEARTBEAT:
+                if worker.capacity > 0:
+                    worker.capacity -= 1
+                    heapq.heappush(self.workers, worker)
+                    return worker
+                else:
+                    heapq.heappush(self.workers, worker)
+        if self.workers:
+            raise error.NoAvailableWorker('all busy')
+        else:
+            raise error.NoAvailableWorker('no worker')
 
+    def get_ready(self, ident, capacity=MAX_WORKERS):
+        for worker in self.workers:
+            if worker.ident == ident:
+                worker.ready_at = time.time()
+                break
+        else:
+            heapq.heappush(self.workers, Worker(ident, capacity))
 
 
 class Frontend(main.Handler):
-
     def __init__(self, broker):
         super(Frontend, self).__init__()
         self._ioloop = main.IOLoop.instance()
@@ -35,6 +94,9 @@ class Frontend(main.Handler):
         self._sock = self.ctx.socket(zmq.ROUTER)
         self._sock.bind('tcp://*:{frontend_port}'.format(frontend_port=self.broker.frontend_port))
         self._ioloop.add_handler(self)
+
+    def sock(self):
+        return self._sock
 
     def set_flag(self, flag):
         if flag != self.flag:
@@ -53,12 +115,12 @@ class Frontend(main.Handler):
         frame = self._sock.recv_multipart()
         try:
             worker = self.broker.workers.next()
-            frame = worker.ident + frame
-        except NoAvailableWorker:
+            frame = [worker.ident] + frame
+        except error.NoAvailableWorker as e:
             request = protocol.Request.loads(frame[-1])
             response = protocol.Response.to(request)
-            response.set_error(error.CallUnavailable('service unavailable'))
-            frame = frame[:-1] + response.box()
+            response.set_error(e)
+            frame = frame[:-1] + [response.box()]
             self.send(frame)
         self.broker.backend.send(frame)
 
@@ -66,11 +128,11 @@ class Frontend(main.Handler):
         try:
             buf = self._buffer.popleft()
             self.sock().send_multipart(buf)
-        except IndexError as ex:
+        except IndexError:
             self.set_flag(self.flag - zmq.POLLOUT)
 
-class Backend(main.Handler):
 
+class Backend(main.Handler):
     def __init__(self, broker):
         super(Backend, self).__init__()
         self._ioloop = main.IOLoop.instance()
@@ -80,6 +142,8 @@ class Backend(main.Handler):
         self._sock.bind('tcp://*:{backend_port}'.format(backend_port=self.broker.backend_port))
         self._ioloop.add_handler(self)
 
+    def sock(self):
+        return self._sock
 
     def set_flag(self, flag):
         if flag != self.flag:
@@ -98,9 +162,37 @@ class Backend(main.Handler):
         try:
             buf = self._buffer.popleft()
             self.sock().send_multipart(buf)
-        except IndexError as ex:
+        except IndexError:
             self.set_flag(self.flag - zmq.POLLOUT)
 
     def on_read(self):
         frame = self._sock.recv_multipart()
+        ident = frame[0]
+        frame.remove(ident)
+        if len(frame) == 1:
+            # heartbeat
+            if frame[0] == 'ready':
+                self.broker.workers.get_ready(ident)
+            else:
+                capacity = int(frame[0])
+                self.broker.workers.get_ready(ident, capacity)
+        else:
+            # any sign from worker means it's ready
+            self.broker.workers.get_ready(ident)
+            self.broker.frontend.send(frame)
 
+
+class Broker(object):
+    def __init__(self, port_pair):
+        self.frontend_port, self.backend_port = port_pair
+        self.frontend = Frontend(self)
+        self.backend = Backend(self)
+        self.workers = WorkerList()
+        self.ioloop = main.IOLoop.instance()
+
+    def start(self):
+        self.ioloop.start()
+
+
+if __name__ == '__main__':
+    Broker((9151, 9152)).start()

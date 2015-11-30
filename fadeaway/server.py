@@ -16,6 +16,8 @@ from core.main import Handler
 from core.main import IOLoop
 from core.log import Log
 
+
+WASTE_GAP = 0
 MAX_WORKERS = 16
 executor = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
@@ -66,7 +68,7 @@ class ThreadedHandler(Handler):
         try:
             buf = self._buffer.popleft()
             self.sock().send_multipart(buf)
-        except IndexError as ex:
+        except IndexError:
             self.set_flag(self.flag - zmq.POLLOUT)
 
     def send(self, frame):
@@ -74,7 +76,7 @@ class ThreadedHandler(Handler):
             self._buffer.append(frame)
             if not zmq.POLLOUT & self.flag:
                 self.set_flag(self.flag | zmq.POLLOUT)
-        except Exception as e:
+        except Exception:
             pass
 
     def get_ref(self, klass, method, args, kwargs):
@@ -86,7 +88,6 @@ class ThreadedHandler(Handler):
         return functools.partial(func, instance, *args, **kwargs)
 
     def dispatch(self, frame):
-        rid = None
         data = frame[-1]
         frame.remove(data)
         try:
@@ -106,7 +107,9 @@ def _async_run(handler, request, callback, frame):
         args = request.args
         kwargs = request.kwargs
         expire_at = request.expire_at
-        if tik > expire_at > 0:
+        call_at = request.call_at
+        if WASTE_GAP and tik - call_at > WASTE_GAP:
+            # 设置WASTE_GAP意味着被调用请求到收到请求耗时超过WASTE_GAP秒，则不处理了
             return
         func = handler.get_ref(klass, method, args, kwargs)
         res = func()

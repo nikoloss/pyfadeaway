@@ -5,26 +5,37 @@ GENERAL = 1
 
 indexes = {}
 
+
 def remote_raise(klass):
     indexes[klass.code] = klass
     return klass
+
 
 @remote_raise
 class GeneralError(Exception):
     code = 1
 
+
 @remote_raise
 class CallTimeout(Exception):
-    code = 100
+    code = 10
+
 
 @remote_raise
 class ClassBlockedTooLong(Exception):
-    code = 200
+    code = 20
+
 
 @remote_raise
 class RefNotFound(Exception):
-    code = 300
+    code = 30
+
 
 @remote_raise
 class CallUnavailable(Exception):
-    code = 400
+    code = 40
+
+
+@remote_raise
+class NoAvailableWorker(Exception):
+    code = 50
