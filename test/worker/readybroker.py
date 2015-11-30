@@ -56,7 +56,7 @@ class Worker(object):
 
 
 class WorkerList(object):
-    _HEARTBEAT = 3
+    _HEARTBEAT = 3.0  # 心跳周期
 
     def __init__(self):
         self.workers = []
