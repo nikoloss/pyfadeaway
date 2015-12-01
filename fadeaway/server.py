@@ -6,6 +6,7 @@ import zmq
 from collections import deque
 from core import protocol
 from core.error import *
+
 try:
     import ujson as json
 except ImportError:
@@ -16,15 +17,12 @@ from core.main import Handler
 from core.main import IOLoop
 from core.log import Log
 
-
 WASTE_GAP = 0
 MAX_WORKERS = 16
 executor = futures.ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 
-
 class ThreadedHandler(Handler):
-
     def export(self, klass):
         class_name = klass.__name__
         self._mapper[class_name] = klass
@@ -93,7 +91,9 @@ class ThreadedHandler(Handler):
         try:
             request = protocol.Request.loads(data)
             executor.submit(_async_run, self, request, self.send, frame)
-            Log.get_logger().debug('[request] %r', data)
+            Log.get_logger().debug('[request] mid: %s call_at: %f expire_at: %f ***** %s.%s(%s, %s)', request.mid,
+                                   request.call_at,
+                                   request.expire_at, request.klass, request.method, request.args, request.kwargs)
         except Exception, e:
             Log.get_logger().exception(e)
 
@@ -117,9 +117,12 @@ def _async_run(handler, request, callback, frame):
         costs = tok - tik
         response.set_result(res)
         response.set_costs(costs)
-        Log.get_logger().debug('[response] [%s] takes [%s] seconds', res, costs)
+
         if tok > expire_at > 0:
+            Log.get_logger().debug('[timeout] mid: %s call_at: %f expire_at: %f hands_on_at: %f done_at: %f costs: %f',
+                                   response.mid, request.call_at, request.expire_at, tik, tok, costs)
             return
+        Log.get_logger().debug('[response] mid: %s status: %d costs: %f', response.mid, response.status, costs)
     except Exception as e:
         tok = time.time()
         costs = tok - tik
