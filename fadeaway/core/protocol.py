@@ -26,7 +26,7 @@ class Request(object):
 
     @classmethod
     def loads(cls, s):
-        self = cls
+        self = cls()
         attrs = json.loads(s)
         self.mid = attrs.get('mid')
         self.klass = attrs.get('class')
