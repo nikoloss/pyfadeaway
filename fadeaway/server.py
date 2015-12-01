@@ -110,6 +110,8 @@ def _async_run(handler, request, callback, frame):
         call_at = request.call_at
         if WASTE_GAP and tik - call_at > WASTE_GAP:
             # 设置WASTE_GAP意味着被调用请求到收到请求耗时超过WASTE_GAP秒，则不处理了
+            Log.get_logger().debug('[abandon] mid: %s call_at: hands_on_at: %f',
+                                   response.mid, request.call_at, tik)
             return
         func = handler.get_ref(klass, method, args, kwargs)
         res = func()
