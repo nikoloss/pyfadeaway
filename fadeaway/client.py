@@ -200,14 +200,14 @@ class AsyncServerProxy(object):
         self.event = zmq.EVENT_CONNECTED | zmq.EVENT_DISCONNECTED
         for config, value in self.configs.iteritems():
             self._rpclient.sock().setsockopt(config, value)
+        self._rpclient.connect('tcp://{host}:{port}'.format(host=self.host, port=self.port))
         self._ioloop = IOLoop.instance()
+
+    def deploy(self):
         if not self._ioloop.is_running():
             with self._lock:
                 if not self._ioloop.is_running():
                     threading.Thread(target=lambda: IOLoop.instance().start()).start()
-
-    def deploy(self):
-        self._rpclient.connect('tcp://{host}:{port}'.format(host=self.host, port=self.port))
         self._deployed = True
 
     def monitor(self, prot, available_cb, unavailable_cb):
