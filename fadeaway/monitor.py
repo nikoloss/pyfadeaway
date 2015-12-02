@@ -1,4 +1,4 @@
-#coding: utf8
+# coding: utf8
 
 import zmq
 import struct
@@ -6,8 +6,8 @@ from core.main import IOLoop
 from core.main import Handler
 from core.log import Log
 
-class Supervisor(Handler):
 
+class Supervisor(Handler):
     def __init__(self):
         super(Supervisor, self).__init__()
         self.flag = zmq.POLLIN
@@ -34,5 +34,3 @@ class Supervisor(Handler):
                     self.unavailable_cb()
         except Exception as e:
             Log.get_logger().debug(e)
-
-

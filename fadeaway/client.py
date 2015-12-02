@@ -51,15 +51,8 @@ class AsyncRPCClient(Handler):
         super(AsyncRPCClient, self).__init__()
         self.flag = zmq.POLLIN
         self._callbacks = {}
-        self._buffer = deque()
-        self._ioloop = IOLoop.instance()
-        self._client = self.ctx.socket(zmq.XREQ)
+        self._sock = self.ctx.socket(zmq.XREQ)
         self._ioloop.add_handler(self)
-
-    def set_flag(self, flag):
-        if flag != self.flag:
-            self.flag = flag
-            self._ioloop.add_callback(self._ioloop.update_handler, self)
 
     def add_callback(self, mid, func, **kwargs):
         timeout = kwargs.get('timeout')
@@ -76,10 +69,7 @@ class AsyncRPCClient(Handler):
             callback(None, error=CallTimeout('time out'))
 
     def connect(self, protocol):
-        self._client.connect(protocol)
-
-    def sock(self):
-        return self._client
+        self._sock.connect(protocol)
 
     def request(self, req, callback, **conf):
         mid = req.mid
@@ -105,13 +95,6 @@ class AsyncRPCClient(Handler):
                 e = indexes[response.status](response.error) if indexes.get(response.status) else Exception(
                     response.error)
             callback(response.result, error=e)
-
-    def on_write(self):
-        try:
-            buf = self._buffer.popleft()
-            self.sock().send(buf)
-        except IndexError as ex:
-            self.set_flag(self.flag - zmq.POLLOUT)
 
 
 class SyncMethodIllusion(object):

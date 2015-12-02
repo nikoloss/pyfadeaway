@@ -30,13 +30,8 @@ class ThreadedHandler(Handler):
 
     def __init__(self):
         super(ThreadedHandler, self).__init__()
-        self._buffer = deque()
         self._mapper = {}
         self.flag = zmq.POLLIN  # overwrite the flag
-        self._ioloop = IOLoop.instance()
-
-    def set_sock(self, sock):
-        self._sock = sock
 
     def listen(self, port):
         self._sock = self.ctx.socket(zmq.XREP)
@@ -50,32 +45,9 @@ class ThreadedHandler(Handler):
             self._sock.connect('tcp://{host}:{port}'.format(host=host, port=port))
             self._ioloop.add_handler(self)
 
-    def sock(self):
-        return self._sock
-
-    def set_flag(self, flag):
-        if flag != self.flag:
-            self.flag = flag
-            self._ioloop.add_callback(self._ioloop.update_handler, self)
-
     def on_read(self):
         frame = self.sock().recv_multipart()
         self.dispatch(frame)
-
-    def on_write(self):
-        try:
-            buf = self._buffer.popleft()
-            self.sock().send_multipart(buf)
-        except IndexError:
-            self.set_flag(self.flag - zmq.POLLOUT)
-
-    def send(self, frame):
-        try:
-            self._buffer.append(frame)
-            if not zmq.POLLOUT & self.flag:
-                self.set_flag(self.flag | zmq.POLLOUT)
-        except Exception:
-            pass
 
     def get_ref(self, klass, method, args, kwargs):
         if klass not in self._mapper:

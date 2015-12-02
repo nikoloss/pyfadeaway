@@ -8,6 +8,7 @@ import heapq
 import time
 
 from log import Log
+from collections import deque
 
 context = zmq.Context()
 
@@ -17,15 +18,41 @@ class Handler(object):
         self.flag = zmq.POLLIN | zmq.POLLOUT
         self.ctx = context
         self.stack_context = {}
+        self._buffer = deque(maxlen=100)
+        self._ioloop = IOLoop.instance()
+        self._sock = None
 
     def sock(self):
-        raise NotImplementedError()
+        return self._sock
+
+    def set_sock(self, sock):
+        self._sock = sock
+
+    def set_flag(self, flag):
+        if flag != self.flag:
+            self.flag = flag
+            self._ioloop.add_callback(self._ioloop.update_handler, self)
+
+    def send(self, frame):
+        try:
+            self._buffer.append(frame)
+            if not zmq.POLLOUT & self.flag:
+                self.set_flag(self.flag | zmq.POLLOUT)
+        except Exception:
+            pass
 
     def on_read(self):
         raise NotImplementedError()
 
     def on_write(self):
-        raise NotImplementedError()
+        try:
+            buf = self._buffer.popleft()
+            if isinstance(buf, str):
+                self.sock().send(buf)
+            elif isinstance(buf, list):
+                self.sock().send_multipart(buf)
+        except IndexError:
+            self.set_flag(self.flag - zmq.POLLOUT)
 
     def on_error(self):
         raise NotImplementedError()
@@ -43,12 +70,13 @@ class Handler(object):
             self.sock().close()
 
 
-class Waker(Handler):
+class Waker(object):
     def __init__(self):
-        super(Waker, self).__init__()
+        self.ctx = context
         self.flag = zmq.POLLIN  # overwrite the flag
         self._reader = self.ctx.socket(zmq.PULL)
         self._writer = self.ctx.socket(zmq.PUSH)
+        self.flag = zmq.POLLIN
         self._reader.bind('inproc://waker')
         self._writer.connect('inproc://waker')
 
@@ -66,6 +94,24 @@ class Waker(Handler):
             self._reader.recv()
         except IOError:
             pass
+
+    def on_write(self):
+        pass
+
+    def on_error(self):
+        pass
+
+    def handle(self, event):
+        if event & zmq.POLLIN:
+            self.on_read()
+        elif event & zmq.POLLOUT:
+            self.on_write()
+        elif event & zmq.POLLERR:
+            self.on_error()
+
+    def __del__(self):
+        if self.sock():
+            self.sock().close()
 
 
 class Timeout(object):
@@ -171,9 +217,13 @@ class IOLoop(object):
 
     def start(self):
 
-        with IOLoop._instance_lock:
-            assert not self._running
-            self._running = True
+        if not self._running:
+            with IOLoop._instance_lock:
+                if not self._running:
+                    self._running = True
+                else:
+                    Log.get_logger().warn('ioloop already started!')
+                    return
 
         self._thread_ident = thread.get_ident()
 
