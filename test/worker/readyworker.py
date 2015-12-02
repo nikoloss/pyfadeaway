@@ -19,7 +19,7 @@ class Worker(object):
             sock.setsockopt(zmq.IDENTITY, ident)
         sock.connect('tcp://{host}:{port}'.format(host=self.host, port=self.port))
         self.handler.set_sock(sock)
-        sock.send(str(server.MAX_WORKERS))
+        self.handler.send(['ready'])
         self._ioloop.add_callback(self._ioloop.add_handler, self.handler)
 
     def start(self):
@@ -32,8 +32,8 @@ rpc = server.ThreadedHandler()
 
 
 @rpc.export
-class A(object):
-    def hi(self, name):
+class Demo(object):
+    def test_string(self, name):
         return 'Hi, ' + name
 
 
