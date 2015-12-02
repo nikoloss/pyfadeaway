@@ -2,7 +2,7 @@
 # Reliable Patterns
 # Projects in "worker" folder covered advanced uses of fadeaway
 #
-# **********             **********              **********
+#     **********             **********              **********
 #     * client *             * client *              * client *
 #     *  XREQ  *             *  XREQ  *              *  XREQ  *
 #     **********             **********              **********
