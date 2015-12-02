@@ -41,6 +41,10 @@ from fadeaway.core import protocol
 from fadeaway.server import MAX_WORKERS
 
 
+HEARTBEAT = 1
+RESPONSE = 2
+
+
 class Worker(object):
     def __init__(self, ident, capacity):
         self.ident = ident
@@ -56,7 +60,8 @@ class Worker(object):
 
 
 class WorkerList(object):
-    _HEARTBEAT = 3.0  # 心跳周期
+    _HEARTBEAT_CC = 3.0  # 心跳周期
+
 
     def __init__(self):
         self.workers = []
@@ -65,7 +70,7 @@ class WorkerList(object):
         now = time.time()
         for x in range(len(self.workers)):
             worker = heapq.heappop(self.workers)
-            if (now - worker.ready_at) < 2 * WorkerList._HEARTBEAT:
+            if (now - worker.ready_at) < 2 * WorkerList._HEARTBEAT_CC:
                 if worker.capacity > 0:
                     worker.capacity -= 1
                     heapq.heappush(self.workers, worker)
@@ -77,13 +82,16 @@ class WorkerList(object):
         else:
             raise error.NoAvailableWorker('no worker')
 
-    def get_ready(self, ident, capacity=MAX_WORKERS):
+    def get_ready(self, ident, flag=HEARTBEAT):
         for worker in self.workers:
             if worker.ident == ident:
-                worker.ready_at = time.time()
+                if flag & HEARTBEAT:
+                    worker.ready_at = time.time()
+                if flag & RESPONSE:
+                    worker.capacity += 1
                 break
         else:
-            heapq.heappush(self.workers, Worker(ident, capacity))
+            heapq.heappush(self.workers, Worker(ident, MAX_WORKERS))
 
 
 class Frontend(main.Handler):
