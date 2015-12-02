@@ -40,7 +40,6 @@ from fadeaway.core import main
 from fadeaway.core import protocol
 from fadeaway.server import MAX_WORKERS
 
-
 HEARTBEAT = 1
 RESPONSE = 2
 
@@ -61,7 +60,6 @@ class Worker(object):
 
 class WorkerList(object):
     _HEARTBEAT_CC = 3.0  # 心跳周期
-
 
     def __init__(self):
         self.workers = []
@@ -181,13 +179,10 @@ class Backend(main.Handler):
         if len(frame) == 1:
             # heartbeat
             if frame[0] == 'ready':
-                self.broker.workers.get_ready(ident)
-            else:
-                capacity = int(frame[0])
-                self.broker.workers.get_ready(ident, capacity)
+                self.broker.workers.get_ready(ident, HEARTBEAT)
         else:
             # any sign from worker means it's ready
-            self.broker.workers.get_ready(ident)
+            self.broker.workers.get_ready(ident, HEARTBEAT | RESPONSE)
             self.broker.frontend.send(frame)
 
 
