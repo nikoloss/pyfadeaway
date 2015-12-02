@@ -34,7 +34,6 @@
 import time
 import zmq
 import heapq
-from collections import deque
 from fadeaway.core import error
 from fadeaway.core import main
 from fadeaway.core import protocol
