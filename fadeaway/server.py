@@ -3,14 +3,9 @@ import time
 import functools
 
 import zmq
-from collections import deque
 from core import protocol
 from core.error import *
 
-try:
-    import ujson as json
-except ImportError:
-    import json
 from concurrent import futures
 
 from core.main import Handler

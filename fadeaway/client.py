@@ -208,11 +208,10 @@ class AsyncServerProxy(object):
     def quit(self):
         if self._monitored:
             self._ioloop.remove_handler(self._supervisor)
-            del self._supervisor
+            self._supervisor = None
         if self._deployed:
             self._ioloop.remove_handler(self._rpclient)
-            del self._rpclient
-        del self
+            self._rpclient = None
 
     def __getattr__(self, klass):
         return AsyncClientIllusion(self._rpclient, klass)
