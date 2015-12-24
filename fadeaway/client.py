@@ -1,8 +1,6 @@
 # coding: utf8
 import time
 import threading
-from collections import deque
-
 import zmq
 
 from core import protocol
