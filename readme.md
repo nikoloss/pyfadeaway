@@ -103,26 +103,6 @@ class Demo(object):
 rpc.connect(('localhost', 9152))   # notice here
 main.IOLoop.instance().start()
 ```
-#### monitor
-```python
-# Monitor the Async-Client
-# Usually ZeroMQ itself guarantees usability of sockets
-# Here is a solution of "How do I know if we lose connections?"
-from fadeaway.client import ServerProxy
-from fadeaway.client import Async
-
-def connected():
-    print 'connected!'
-
-def disconnected():
-    print 'disconnected!'
-
-if __name__ == '__main__':
-    ss = ServerProxy(Async, 'localhost', 9151)
-    # monitor(signature, connected_callback, disconnect_callback
-    ss.monitor('wo', connected, disconnected))
-    ss.deploy()
-```
 
 ## About Log
 Just add "fadeaway" logging handler, set it to DEBUG level. it would log all 
