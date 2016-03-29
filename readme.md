@@ -72,38 +72,6 @@ if __name__ == '__main__':
     h.hello('rowland').then(callback)
     h.hi('lucy').then(callback)
 ```
-#### scale-service
-broker.py
-```python
-# broker.py is a proxy of a certain kind of services which be deployed distributedly
-# first port is for clients, second one is for servers to connect
-from fadeaway.device import broker
-
-if __name__ == '__main__':
-    broker.QueueBroker(9151, 9152)
-```    
-serv.py
-```python
-# serv.py
-import time
-from fadeaway.core import main
-from fadeaway import server
-
-rpc = server.RemoteSrv()
-
-@rpc.export
-class Demo(object):
-    def hello(self, name):
-        time.sleep(5)   # That will show how multi-threads work
-        return "Hello, %s" % name
-
-    def hi(self, name):
-        return 'Hi, %s' % name
-
-rpc.connect(('localhost', 9152))   # notice here
-main.IOLoop.instance().start()
-```
-
 ## About Log
 Just add "fadeaway" logging handler, set it to DEBUG level. it would log all 
 the information that every request or response carries.
