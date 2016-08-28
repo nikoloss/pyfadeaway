@@ -11,7 +11,7 @@ from log import Log
 from collections import deque
 
 context = zmq.Context()
-ctx.set(zmq.MAX_SOCKETS, 1000000)
+context.set(zmq.MAX_SOCKETS, 1000000)
 
 class Handler(object):
     def __init__(self):
