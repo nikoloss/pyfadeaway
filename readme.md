@@ -1,18 +1,18 @@
 ﻿The PyFadeaway module
 ===
-##Introduction
+## Introduction
 Pyfadeaway is a multi-task RPC module also easy to use.
 You can build distributed application based on a good performance RPC 
 framwork with minimal effort.</br>
 Pyfadeaway是一个基于多线程的RPC 的模块，它非常小巧，易读，易用。
 你可以轻而易举的使用它来构建高性能的rpc应用
-##Installation
+## Installation
 ```
 $> git clone https://github.com/nikoloss/pyfadeaway
 $> cd pyfadeaway
 $> sudo python setup.py install
 ```
-##Quick Start
+## Quick Start
 #### server
 ```python
 # This is a server demo, it shows a simply way to export a function to the
@@ -35,7 +35,7 @@ class Demo(object):
 rpc.listen(9151)
 main.IOLoop.instance().start()
 ```
-####sync-client
+#### sync-client
 ```python
 # Sync-Client
 # The Client will work in a synchronous way
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     print h.hello('rowland')
     print h.hi('lucy')
 ```
-####async-client
+#### async-client
 ```python
 # Async-Client
 # The Client will work in an asynchronous way which would not cause any 
