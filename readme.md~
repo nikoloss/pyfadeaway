@@ -43,6 +43,7 @@ main.IOLoop.instance().start()
 from fadeaway.client import ServerProxy
 from fadeaway.client import Sync 
 
+
 if __name__ == '__main__':
     ss = ServerProxy(Sync, 'localhost', 9151)
     h = ss.Demo()
